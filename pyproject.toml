@@ -1,0 +1,22 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "opendroidvm"
+version = "0.3.0"
+description = "Android cihaz profilleriyle QEMU uzerinde recovery/ROM deneme araci"
+readme = "README.md"
+requires-python = ">=3.8"
+license = {text = "GPL-2.0-or-later"}
+dependencies = []
+
+[project.scripts]
+odvm = "opendroidvm.cli:main"
+opendroidvm = "opendroidvm.cli:main"
+
+[tool.setuptools]
+packages = ["opendroidvm"]
+
+[tool.setuptools.package-data]
+opendroidvm = ["profiles/*.json"]
