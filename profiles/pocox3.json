@@ -1,0 +1,22 @@
+{
+  "name": "Xiaomi Poco X3 NFC",
+  "codename": "surya",
+  "soc": "Snapdragon 732G",
+  "arch": "aarch64",
+  "cpu": "cortex-a76",
+  "ram_mb": 6144,
+  "cpu_cores": 8,
+  "screen": {
+    "width": 1080,
+    "height": 2400,
+    "dpi": 395
+  },
+  "recovery": {
+    "codename": "surya",
+    "projects": [
+      "twrp",
+      "orangefox"
+    ]
+  },
+  "notes": "Recovery imaji ayri verilir; ROM paketlenmez."
+}

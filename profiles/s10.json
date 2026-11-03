@@ -1,0 +1,22 @@
+{
+  "name": "Samsung Galaxy S10 (SM-G973F)",
+  "codename": "beyond1lte",
+  "soc": "Exynos 9820",
+  "arch": "aarch64",
+  "cpu": "cortex-a76",
+  "ram_mb": 8192,
+  "cpu_cores": 8,
+  "screen": {
+    "width": 1440,
+    "height": 3040,
+    "dpi": 550
+  },
+  "recovery": {
+    "codename": "beyond1lte",
+    "projects": [
+      "twrp",
+      "orangefox"
+    ]
+  },
+  "notes": "Recovery imaji ayri verilir; ROM paketlenmez."
+}

@@ -1,0 +1,22 @@
+{
+  "name": "Xiaomi Redmi Note 9S",
+  "codename": "curtana",
+  "soc": "Snapdragon 720G",
+  "arch": "aarch64",
+  "cpu": "cortex-a76",
+  "ram_mb": 4096,
+  "cpu_cores": 8,
+  "screen": {
+    "width": 1080,
+    "height": 2400,
+    "dpi": 395
+  },
+  "recovery": {
+    "codename": "curtana",
+    "projects": [
+      "twrp",
+      "orangefox"
+    ]
+  },
+  "notes": "Recovery imaji ayri verilir; ROM paketlenmez."
+}

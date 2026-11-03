@@ -1,0 +1,22 @@
+{
+  "name": "OnePlus 3",
+  "codename": "oneplus3",
+  "soc": "Snapdragon 820",
+  "arch": "aarch64",
+  "cpu": "cortex-a57",
+  "ram_mb": 6144,
+  "cpu_cores": 4,
+  "screen": {
+    "width": 1080,
+    "height": 1920,
+    "dpi": 401
+  },
+  "recovery": {
+    "codename": "oneplus3",
+    "projects": [
+      "twrp",
+      "orangefox"
+    ]
+  },
+  "notes": "Recovery imaji ayri verilir; ROM paketlenmez."
+}

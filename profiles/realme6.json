@@ -1,0 +1,22 @@
+{
+  "name": "Realme 6",
+  "codename": "RMX2001",
+  "soc": "Helio G90T",
+  "arch": "aarch64",
+  "cpu": "cortex-a76",
+  "ram_mb": 6144,
+  "cpu_cores": 8,
+  "screen": {
+    "width": 1080,
+    "height": 2400,
+    "dpi": 405
+  },
+  "recovery": {
+    "codename": "RMX2001",
+    "projects": [
+      "twrp",
+      "orangefox"
+    ]
+  },
+  "notes": "Recovery imaji ayri verilir; ROM paketlenmez."
+}

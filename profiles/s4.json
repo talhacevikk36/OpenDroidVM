@@ -1,0 +1,22 @@
+{
+  "name": "Samsung Galaxy S4 (GT-I9505)",
+  "codename": "jfltexx",
+  "soc": "Snapdragon 600",
+  "arch": "arm",
+  "cpu": "cortex-a15",
+  "ram_mb": 2048,
+  "cpu_cores": 4,
+  "screen": {
+    "width": 1080,
+    "height": 1920,
+    "dpi": 441
+  },
+  "recovery": {
+    "codename": "jfltexx",
+    "projects": [
+      "twrp",
+      "orangefox"
+    ]
+  },
+  "notes": "Recovery imaji ayri verilir; ROM paketlenmez."
+}

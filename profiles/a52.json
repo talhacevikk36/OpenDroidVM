@@ -1,0 +1,22 @@
+{
+  "name": "Samsung Galaxy A52",
+  "codename": "a52q",
+  "soc": "Snapdragon 720G",
+  "arch": "aarch64",
+  "cpu": "cortex-a76",
+  "ram_mb": 6144,
+  "cpu_cores": 8,
+  "screen": {
+    "width": 1080,
+    "height": 2400,
+    "dpi": 407
+  },
+  "recovery": {
+    "codename": "a52q",
+    "projects": [
+      "twrp",
+      "orangefox"
+    ]
+  },
+  "notes": "Recovery imaji ayri verilir; ROM paketlenmez."
+}

@@ -1,0 +1,22 @@
+{
+  "name": "Google Pixel 4a",
+  "codename": "sunfish",
+  "soc": "Snapdragon 730G",
+  "arch": "aarch64",
+  "cpu": "cortex-a76",
+  "ram_mb": 6144,
+  "cpu_cores": 8,
+  "screen": {
+    "width": 1080,
+    "height": 2340,
+    "dpi": 413
+  },
+  "recovery": {
+    "codename": "sunfish",
+    "projects": [
+      "twrp",
+      "orangefox"
+    ]
+  },
+  "notes": "Recovery imaji ayri verilir; ROM paketlenmez."
+}

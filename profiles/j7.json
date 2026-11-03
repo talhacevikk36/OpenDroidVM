@@ -1,0 +1,22 @@
+{
+  "name": "Samsung Galaxy J7 (2016)",
+  "codename": "j7xelte",
+  "soc": "Exynos 7870",
+  "arch": "aarch64",
+  "cpu": "cortex-a53",
+  "ram_mb": 2048,
+  "cpu_cores": 8,
+  "screen": {
+    "width": 720,
+    "height": 1280,
+    "dpi": 267
+  },
+  "recovery": {
+    "codename": "j7xelte",
+    "projects": [
+      "twrp",
+      "orangefox"
+    ]
+  },
+  "notes": "Recovery imaji ayri verilir; ROM paketlenmez."
+}

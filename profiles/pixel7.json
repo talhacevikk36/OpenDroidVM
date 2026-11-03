@@ -1,0 +1,22 @@
+{
+  "name": "Google Pixel 7",
+  "codename": "panther",
+  "soc": "Google Tensor G2",
+  "arch": "aarch64",
+  "cpu": "cortex-a76",
+  "ram_mb": 8192,
+  "cpu_cores": 8,
+  "screen": {
+    "width": 1080,
+    "height": 2400,
+    "dpi": 416
+  },
+  "recovery": {
+    "codename": "panther",
+    "projects": [
+      "twrp",
+      "orangefox"
+    ]
+  },
+  "notes": "Recovery imaji ayri verilir; ROM paketlenmez."
+}

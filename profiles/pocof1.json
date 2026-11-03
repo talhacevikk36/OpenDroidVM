@@ -1,0 +1,22 @@
+{
+  "name": "Xiaomi Poco F1",
+  "codename": "beryllium",
+  "soc": "Snapdragon 845",
+  "arch": "aarch64",
+  "cpu": "cortex-a72",
+  "ram_mb": 6144,
+  "cpu_cores": 8,
+  "screen": {
+    "width": 1080,
+    "height": 2246,
+    "dpi": 403
+  },
+  "recovery": {
+    "codename": "beryllium",
+    "projects": [
+      "twrp",
+      "orangefox"
+    ]
+  },
+  "notes": "Recovery imaji ayri verilir; ROM paketlenmez."
+}

@@ -1,0 +1,22 @@
+{
+  "name": "Google Pixel 5",
+  "codename": "redfin",
+  "soc": "Snapdragon 765G",
+  "arch": "aarch64",
+  "cpu": "cortex-a76",
+  "ram_mb": 8192,
+  "cpu_cores": 8,
+  "screen": {
+    "width": 1080,
+    "height": 2340,
+    "dpi": 432
+  },
+  "recovery": {
+    "codename": "redfin",
+    "projects": [
+      "twrp",
+      "orangefox"
+    ]
+  },
+  "notes": "Recovery imaji ayri verilir; ROM paketlenmez."
+}

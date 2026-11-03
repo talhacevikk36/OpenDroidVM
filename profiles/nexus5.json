@@ -1,0 +1,22 @@
+{
+  "name": "Google Nexus 5",
+  "codename": "hammerhead",
+  "soc": "Snapdragon 800",
+  "arch": "arm",
+  "cpu": "cortex-a15",
+  "ram_mb": 2048,
+  "cpu_cores": 4,
+  "screen": {
+    "width": 1080,
+    "height": 1920,
+    "dpi": 445
+  },
+  "recovery": {
+    "codename": "hammerhead",
+    "projects": [
+      "twrp",
+      "orangefox"
+    ]
+  },
+  "notes": "Recovery imaji ayri verilir; ROM paketlenmez."
+}

@@ -1,0 +1,22 @@
+{
+  "name": "Xiaomi Redmi Note 7",
+  "codename": "lavender",
+  "soc": "Snapdragon 660",
+  "arch": "aarch64",
+  "cpu": "cortex-a72",
+  "ram_mb": 4096,
+  "cpu_cores": 8,
+  "screen": {
+    "width": 1080,
+    "height": 2340,
+    "dpi": 409
+  },
+  "recovery": {
+    "codename": "lavender",
+    "projects": [
+      "twrp",
+      "orangefox"
+    ]
+  },
+  "notes": "Recovery imaji ayri verilir; ROM paketlenmez."
+}

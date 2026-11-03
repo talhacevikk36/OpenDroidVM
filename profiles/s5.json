@@ -1,0 +1,22 @@
+{
+  "name": "Samsung Galaxy S5 (SM-G900F)",
+  "codename": "klte",
+  "soc": "Snapdragon 801",
+  "arch": "arm",
+  "cpu": "cortex-a15",
+  "ram_mb": 2048,
+  "cpu_cores": 4,
+  "screen": {
+    "width": 1080,
+    "height": 1920,
+    "dpi": 432
+  },
+  "recovery": {
+    "codename": "klte",
+    "projects": [
+      "twrp",
+      "orangefox"
+    ]
+  },
+  "notes": "Recovery imaji ayri verilir; ROM paketlenmez."
+}

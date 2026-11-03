@@ -1,0 +1,22 @@
+{
+  "name": "Samsung Galaxy Note 4",
+  "codename": "trlte",
+  "soc": "Snapdragon 805",
+  "arch": "arm",
+  "cpu": "cortex-a15",
+  "ram_mb": 3072,
+  "cpu_cores": 4,
+  "screen": {
+    "width": 1440,
+    "height": 2560,
+    "dpi": 515
+  },
+  "recovery": {
+    "codename": "trlte",
+    "projects": [
+      "twrp",
+      "orangefox"
+    ]
+  },
+  "notes": "Recovery imaji ayri verilir; ROM paketlenmez."
+}
