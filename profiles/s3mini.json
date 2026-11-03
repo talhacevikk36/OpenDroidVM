@@ -1,0 +1,10 @@
+{
+  "name": "Samsung Galaxy S3 Mini (GT-I8190)",
+  "soc": "ST-Ericsson U8420",
+  "arch": "arm",
+  "cpu": "cortex-a9",
+  "ram_mb": 1024,
+  "cpu_cores": 2,
+  "screen": {"width": 480, "height": 800, "dpi": 233},
+  "notes": "32-bit ARM; QEMU virt makinesinde cortex-a9 kullanilir."
+}

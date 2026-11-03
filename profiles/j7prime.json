@@ -1,0 +1,10 @@
+{
+  "name": "Samsung Galaxy J7 Prime (SM-G610)",
+  "soc": "Exynos 7870",
+  "arch": "aarch64",
+  "cpu": "cortex-a53",
+  "ram_mb": 3072,
+  "cpu_cores": 8,
+  "screen": {"width": 1080, "height": 1920, "dpi": 401},
+  "notes": "Cihaza ozel imajlar genel virt makinesinde acilmayabilir."
+}

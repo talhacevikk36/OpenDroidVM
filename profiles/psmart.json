@@ -1,0 +1,10 @@
+{
+  "name": "Huawei P Smart (FIG-LX1)",
+  "soc": "Kirin 659",
+  "arch": "aarch64",
+  "cpu": "cortex-a53",
+  "ram_mb": 3072,
+  "cpu_cores": 8,
+  "screen": {"width": 1080, "height": 2160, "dpi": 428},
+  "notes": "Kirin onyukleyici kilitli cihazlar icin gercek imaj calismaz."
+}
