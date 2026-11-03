@@ -28,7 +28,7 @@ endif()
 # profiles klasorunu exe'nin yanina kopyala
 add_custom_command(TARGET opendroidwm POST_BUILD
   COMMAND ${CMAKE_COMMAND} -E copy_directory
-          ${CMAKE_SOURCE_DIR}/profiles $<TARGET_FILE_DIR:opendroidwm>/profiles)
+          ${CMAKE_SOURCE_DIR}/opendroidvm/profiles $<TARGET_FILE_DIR:opendroidwm>/profiles)
 
 install(TARGETS opendroidwm RUNTIME DESTINATION .)
-install(DIRECTORY profiles DESTINATION .)
+install(DIRECTORY opendroidvm/profiles DESTINATION .)
