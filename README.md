@@ -33,6 +33,9 @@ odvm extract twrp.img --out cikti                # kernel + ramdisk
 odvm create-disk userdata.img 4096               # bos disk
 odvm new mycihaz --soc "X SoC" --ram 4096        # kendi profilin
 odvm validate                                    # profilleri dogrula
+odvm key volup                                   # calisan VM'e ses +
+odvm key power --hold 1000                       # uzun bas: guc menusu
+odvm panel                                       # tus paneli (tkinter)
 ```
 
 - **Recovery ve ROM ayri verilir.** Pakete recovery/ROM dahil degildir: `--recovery`, `--boot`, `--rom`, `--userdata`.
@@ -41,6 +44,18 @@ odvm validate                                    # profilleri dogrula
 - `--mode fast`: 64-bit ayni mimaride KVM/WHPX/HVF, degilse cok iplikli TCG (`-cpu max`).
 - `--ram`, `--cores` profili ezer. `--adb-port` (varsayilan 5555, 0 = kapali), `--vnc N`, `--snapshot`.
 - Kendi profillerin `~/.config/opendroidvm/profiles/` (Windows: `%APPDATA%\opendroidvm\profiles`) icinde durur ve ayni isimdeki yerlesik profili ezer.
+
+## Tuslar (ses, guc, home...)
+
+`odvm run` VM'i `127.0.0.1:5556` uzerinde bir QEMU monitor ile baslatir (`--monitor-port`, 0 = kapali). `odvm key` bu monitor uzerinden tus gonderir, adb gerekmez:
+
+`volup`, `voldown`, `mute`, `power`, `home`, `back`, `menu`, `wake`, `sleep`. `recents` ve `camera` yalnizca adb ile: `odvm key recents --via adb`. `odvm key --list` hepsini gosterir. Guc menusu icin `--hold 1000`. `odvm panel` ayni tuslari dugmelerle verir (Linux'ta `python3-tk` gerekir).
+
+Tuslarin Android'de ne yaptigi imajin tus haritasina baglidir (ornegin recovery'de ses tuslari menu gezer, guc secer).
+
+## Hiz
+
+`--mode fast` diskler icin `cache=unsafe,aio=threads` kullanir (veri kaybi riski: VM aniden kapanirsa disk bozulabilir, `--snapshot` ile birlikte guvenli). Profil arama artik tum JSON'lari okumaz. TCG (hizlandirmasiz) calisan cihazlarda kazanc sinirlidir; en buyuk hiz farki 64-bit konakta KVM/WHPX/HVF ile gelir.
 
 ## Sinirlar
 

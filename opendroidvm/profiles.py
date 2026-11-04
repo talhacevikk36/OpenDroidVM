@@ -67,7 +67,13 @@ def load_all(directory=None):
 
 
 def find(pid, directory=None):
-    for p in load_all(directory):
-        if p.id == pid.lower() or (p.codename and p.codename.lower() == pid.lower()):
+    pid = pid.lower()
+    dirs = [Path(directory)] if directory else [user_dir(), PROFILE_DIR]  # kullanici oncelikli
+    for d in dirs:                       # hizli yol: <id>.json dogrudan
+        f = d / f"{pid}.json"
+        if f.is_file():
+            return load_profile(f)
+    for p in load_all(directory):        # yavas yol: kod adi ile ara
+        if p.codename and p.codename.lower() == pid:
             return p
     return None

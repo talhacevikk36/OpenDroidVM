@@ -62,3 +62,21 @@ def test_32bit_guest_never_hw_accel():
 def test_validate_all_profiles():
     from opendroidvm import cli
     assert cli.main(["validate"]) == 0
+
+
+def test_keys_and_monitor_flag():
+    from opendroidvm import keys
+    import pytest
+    assert keys.canon("Vol+") == "volup" and keys.KEYS["power"][1] == 26
+    with pytest.raises(KeyError):
+        keys.canon("nope")
+    c = launcher.build(profiles.find("pixel"), launcher.Options())
+    assert "tcp:127.0.0.1:5556,server,nowait" in c
+    c = launcher.build(profiles.find("pixel"), launcher.Options(monitor_port=0))
+    assert "-monitor" not in c
+
+
+def test_fast_drive_cache(tmp_path):
+    f = tmp_path / "s.img"; f.write_bytes(b"0")
+    c = launcher.build(profiles.find("pixel"), launcher.Options(mode="fast", rom=str(f)))
+    assert any("cache=unsafe" in x for x in c)
