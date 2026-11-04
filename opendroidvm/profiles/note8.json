@@ -5,6 +5,10 @@
   "cpu": "cortex-a57",
   "ram_mb": 6144,
   "cpu_cores": 8,
-  "screen": {"width": 1440, "height": 2960, "dpi": 521},
-  "notes": "Gercek Exynos imajlari genel virt makinesinde acilmayabilir."
+  "screen": {
+    "width": 1440,
+    "height": 2960,
+    "dpi": 521
+  },
+  "notes": "Real Exynos images may not boot on the generic virt machine."
 }

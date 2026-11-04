@@ -5,6 +5,10 @@
   "cpu": "cortex-a53",
   "ram_mb": 3072,
   "cpu_cores": 8,
-  "screen": {"width": 1080, "height": 2160, "dpi": 428},
-  "notes": "Kirin onyukleyici kilitli cihazlar icin gercek imaj calismaz."
+  "screen": {
+    "width": 1080,
+    "height": 2160,
+    "dpi": 428
+  },
+  "notes": "Real images do not work for Kirin devices with a locked bootloader."
 }

@@ -1,17 +1,24 @@
-# Degisiklikler
+# Changelog
+
+## 0.6.0
+- English interface and docs (Turkish kept: `--lang tr`, `README.tr.md`); `docs/how-it-works.md`
+- Fix: two VMs / a real emulator on the same host ports (adb 5555, monitor 5556) now get free ports automatically
+- Fix: no window system (SSH, containers) no longer crashes QEMU; falls back to VNC
+- Fix: `odvm new ../x` and similar ids could write or read outside the profile folder
+- Pages site in English
 
 ## 0.5.0
-- Donanim tuslari: `odvm key` (ses +/-, guc, home, back, menu...) ve `odvm panel`; monitor uzerinden, adb gerekmez
-- Hizli mod: disk onbellegi (`cache=unsafe`), profil aramada hiz artisi
+- Hardware keys: `odvm key` (volume +/-, power, home, back, menu...) and `odvm panel`; via the QEMU monitor, no adb needed
+- Fast mode: disk cache (`cache=unsafe`), faster profile lookup
 
 ## 0.4.0
-- Android (Termux) destegi: `scripts/install-termux.sh`, KVM olmadan TCG, ekran VNC
-- Yeni komutlar: `odvm new`, `odvm validate`
-- Hata duzeltmeleri: 32-bit konuk icin hatali donanim hizlandirma, bozuk boot imaji algilama, her calistirmada tekrar acilan gecici klasorler (artik onbellekte)
-- GitHub Pages sitesi (profil arama), CI ve otomatik release
+- Android (Termux) support: `scripts/install-termux.sh`, TCG without KVM, screen over VNC
+- New commands: `odvm new`, `odvm validate`
+- Fixes: wrong hardware acceleration for 32-bit guests, corrupt boot image detection, temp folders re-created on every run (now cached)
+- GitHub Pages site (profile search), CI and release workflow
 
 ## 0.3.0
-- `list` filtreleri, `doctor`, `extract`, `create-disk`, `--ram/--cores/--adb-port/--vnc/--snapshot`, kullanici profilleri
+- `list` filters, `doctor`, `extract`, `create-disk`, `--ram/--cores/--adb-port/--vnc/--snapshot`, user profiles
 
 ## 0.2.0
-- pip paketi, 51 profil, `fast`/`accurate` mod, QEMU kurulumu, boot imaji acma
+- pip package, 51 profiles, `fast`/`accurate` modes, QEMU installer, boot image unpacking

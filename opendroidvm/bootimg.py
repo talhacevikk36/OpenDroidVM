@@ -1,19 +1,21 @@
-"""Android boot/recovery imajindan kernel ve ramdisk cikarir (v0-v4)."""
+"""Extracts kernel and ramdisk from an Android boot/recovery image (v0-v4)."""
 import hashlib
 import os
 import struct
 import zlib
 from pathlib import Path
 
+from .i18n import t
+
 MAGIC = b"ANDROID!"
 
 
 class NotBootImage(ValueError):
-    """ANDROID! imzasi yok (ham kernel olabilir)."""
+    """No ANDROID! magic (may be a raw kernel)."""
 
 
 class CorruptImage(ValueError):
-    """Imza var ama kernel/ramdisk boyutlari dosyaya sigmiyor."""
+    """Magic is present but kernel/ramdisk sizes do not fit the file."""
 
 
 def _align(n, a):
@@ -21,9 +23,9 @@ def _align(n, a):
 
 
 def parse(data):
-    """(kernel, ramdisk) bytes dondurur."""
+    """Return (kernel, ramdisk) bytes."""
     if data[:8] != MAGIC:
-        raise NotBootImage("Android boot imaji degil (ANDROID! imzasi yok)")
+        raise NotBootImage(t("not_boot"))
     version = struct.unpack_from("<I", data, 40)[0]
     if version >= 3:
         ksz, rsz = struct.unpack_from("<II", data, 8)
@@ -34,14 +36,14 @@ def parse(data):
     koff = page
     roff = koff + _align(ksz, page)
     if ksz == 0 or koff + ksz > len(data) or roff + rsz > len(data):
-        raise CorruptImage("Bozuk ya da eksik imaj (kernel/ramdisk boyutu dosyaya sigmiyor)")
+        raise CorruptImage(t("corrupt"))
     return data[koff:koff + ksz], data[roff:roff + rsz]
 
 
 def _gunzip(blob):
     if blob[:2] != b"\x1f\x8b":
         return blob
-    d = zlib.decompressobj(31)  # sondaki dtb gibi artiklari yoksayar
+    d = zlib.decompressobj(31)  # ignores trailing data such as an appended dtb
     return d.decompress(blob)
 
 
@@ -56,7 +58,7 @@ def extract(img_path, out_dir):
 
 
 def cache_dir(img_path):
-    """Imaja ozel kalici onbellek klasoru (tekrar tekrar acmamak icin)."""
+    """Per-image persistent cache folder (avoids re-extracting)."""
     st = os.stat(img_path)
     key = hashlib.sha1(f"{os.path.abspath(img_path)}|{st.st_size}|{st.st_mtime_ns}"
                        .encode()).hexdigest()[:16]

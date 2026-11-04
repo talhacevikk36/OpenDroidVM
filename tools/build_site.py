@@ -1,4 +1,4 @@
-"""GitHub Pages sitesi uretir: python tools/build_site.py -> site/index.html"""
+"""Builds the GitHub Pages site: python tools/build_site.py -> site/index.html"""
 import html
 import json
 from pathlib import Path
@@ -13,7 +13,7 @@ rows = "\n".join(
         arch=p.get("arch", "aarch64"), ram=p.get("ram_mb", ""),
         res="{}x{}".format(p.get("screen", {}).get("width", ""), p.get("screen", {}).get("height", "")))
     for p in profiles)
-page = f"""<!doctype html><html lang="tr"><head><meta charset="utf-8">
+page = f"""<!doctype html><html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>OpenDroidVM</title>
 <style>
@@ -26,15 +26,15 @@ input{{width:100%;box-sizing:border-box;padding:.6em;font-size:1em;border:1px so
 a{{color:var(--ac)}}.m{{color:var(--mut)}}
 </style></head><body>
 <h1>OpenDroidVM</h1>
-<p>Android cihaz profilleriyle QEMU uzerinde recovery ve ROM deneme araci. <b>{len(profiles)}</b> profil.</p>
+<p>Try Android recoveries and ROMs on QEMU using device profiles. <b>{len(profiles)}</b> profiles.</p>
 <pre>pip install git+https://github.com/talhacevikk36/OpenDroidVM.git
 odvm install-qemu
 odvm run s10 --recovery twrp.img --mode fast</pre>
-<p>Android (Termux): <code>bash scripts/install-termux.sh</code> &middot; <a href="https://github.com/talhacevikk36/OpenDroidVM">GitHub</a> &middot; <a href="https://github.com/talhacevikk36/OpenDroidVM/releases">Surumler</a></p>
-<input id="q" placeholder="Cihaz ara (ad, kod adi, SoC)..." autofocus>
-<div class="w"><table id="t"><thead><tr><th>ID</th><th>Kod adi</th><th>Ad</th><th>SoC</th><th>Mimari</th><th>RAM (MB)</th><th>Ekran</th></tr></thead>
+<p>Android (Termux): <code>bash scripts/install-termux.sh</code> &middot; <a href="https://github.com/talhacevikk36/OpenDroidVM">GitHub</a> &middot; <a href="https://github.com/talhacevikk36/OpenDroidVM/blob/main/docs/how-it-works.md">How it works</a> &middot; <a href="https://github.com/talhacevikk36/OpenDroidVM/releases">Releases</a></p>
+<input id="q" placeholder="Search devices (name, codename, SoC)..." autofocus>
+<div class="w"><table id="t"><thead><tr><th>ID</th><th>Codename</th><th>Name</th><th>SoC</th><th>Arch</th><th>RAM (MB)</th><th>Screen</th></tr></thead>
 <tbody>{rows}</tbody></table></div>
-<p class="m">QEMU gercek SoC'leri taklit etmez; profiller CPU modeli, RAM ve ekran parametrelerini uygular.</p>
+<p class="m">QEMU does not emulate real SoCs; profiles apply CPU model, RAM and screen parameters.</p>
 <script>
 const q=document.getElementById('q'),rs=[...document.querySelectorAll('#t tbody tr')];
 q.addEventListener('input',()=>{{const v=q.value.toLowerCase();rs.forEach(r=>r.style.display=r.textContent.toLowerCase().includes(v)?'':'none')}});
@@ -42,4 +42,4 @@ q.addEventListener('input',()=>{{const v=q.value.toLowerCase();rs.forEach(r=>r.s
 out = root / "site"
 out.mkdir(exist_ok=True)
 (out / "index.html").write_text(page, encoding="utf-8")
-print("site/index.html", len(profiles), "profil")
+print("site/index.html", len(profiles), "profiles")

@@ -11,15 +11,15 @@ using namespace odw;
 
 static void usage() {
     std::cout <<
-R"(OpenDroidWm 0.1.0 - Android cihaz profili tabanli ROM/recovery deneme araci
+R"(OpenDroidWm 0.1.0 - try Android ROMs/recoveries using device profiles
 
-Kullanim:
+Usage:
   opendroidwm list
-  opendroidwm info <profil>
-  opendroidwm run <profil> [--recovery img] [--boot img] [--system img]
-                           [--userdata img] [--qemu yol] [--headless] [--dry-run]
+  opendroidwm info <profile>
+  opendroidwm run <profile> [--recovery img] [--boot img] [--system img]
+                           [--userdata img] [--qemu path] [--headless] [--dry-run]
 
-Profiller 'profiles' klasorunden okunur (OPENDROIDWM_PROFILES ile degistirilebilir).
+Profiles are read from the 'profiles' folder (override with OPENDROIDWM_PROFILES).
 )";
 }
 
@@ -40,7 +40,7 @@ int main(int argc, char** argv) {
     const auto profiles = loadAllProfiles(profilesDir(argv[0]));
 
     if (cmd == "list") {
-        if (profiles.empty()) std::cout << "Profil bulunamadi.\n";
+        if (profiles.empty()) std::cout << "No profiles found.\n";
         for (const auto& p : profiles)
             std::cout << p.id << "\t" << p.name << "\t[" << p.arch << ", " << p.ram_mb << " MB]\n";
         return 0;
@@ -52,7 +52,7 @@ int main(int argc, char** argv) {
     }
     const DeviceProfile* p = findProfile(profiles, argv[2]);
     if (!p) {
-        std::cerr << "Profil bulunamadi: " << argv[2] << "\n";
+        std::cerr << "Profile not found: " << argv[2] << "\n";
         return 2;
     }
 

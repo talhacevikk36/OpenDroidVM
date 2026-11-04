@@ -5,6 +5,10 @@
   "cpu": "cortex-a15",
   "ram_mb": 3072,
   "cpu_cores": 4,
-  "screen": {"width": 1080, "height": 1920, "dpi": 386},
+  "screen": {
+    "width": 1080,
+    "height": 1920,
+    "dpi": 386
+  },
   "notes": "32-bit ARM."
 }
