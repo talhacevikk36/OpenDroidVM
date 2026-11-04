@@ -80,3 +80,52 @@ def test_fast_drive_cache(tmp_path):
     f = tmp_path / "s.img"; f.write_bytes(b"0")
     c = launcher.build(profiles.find("pixel"), launcher.Options(mode="fast", rom=str(f)))
     assert any("cache=unsafe" in x for x in c)
+
+
+def test_i18n_switch():
+    from opendroidvm import i18n
+    i18n.set_lang("tr"); assert "bulunamadi" in i18n.t("profile_not_found", x="a")
+    i18n.set_lang("en"); assert "not found" in i18n.t("profile_not_found", x="a")
+    i18n.set_lang(None)
+
+
+def test_path_traversal_blocked(tmp_path, monkeypatch):
+    from opendroidvm import cli
+    monkeypatch.setenv("APPDATA", str(tmp_path))
+    assert profiles.find("../../etc/passwd") is None
+    assert profiles.find("..") is None
+    assert cli.main(["new", "../evil"]) == 1
+    assert not list(tmp_path.rglob("evil*"))
+
+
+def test_no_display_falls_back_to_vnc(monkeypatch):
+    import platform
+    from opendroidvm import qemu
+    monkeypatch.setattr(platform, "system", lambda: "Linux")
+    monkeypatch.setattr(qemu, "is_termux", lambda: False)
+    monkeypatch.delenv("DISPLAY", raising=False); monkeypatch.delenv("WAYLAND_DISPLAY", raising=False)
+    assert launcher.effective_vnc(launcher.Options()) == (0, "nodisplay")
+    assert launcher.effective_vnc(launcher.Options(headless=True)) == (-1, None)
+    monkeypatch.setenv("DISPLAY", ":0")
+    assert launcher.effective_vnc(launcher.Options()) == (-1, None)
+
+
+def test_busy_port_is_skipped():
+    import socket
+    from opendroidvm import qemu
+    s = socket.socket(); s.bind(("127.0.0.1", 0)); s.listen(1)
+    busy = s.getsockname()[1]
+    try:
+        assert not qemu.port_free(busy)
+        assert qemu.free_port(busy) != busy
+    finally:
+        s.close()
+
+
+def test_ports_never_collide(monkeypatch):
+    from opendroidvm import cli, qemu
+    monkeypatch.setattr(qemu, "port_free", lambda p, host="127.0.0.1": p not in (5555, 5556))
+    o = launcher.Options()
+    assert cli._resolve_ports(o)
+    assert o.adb_port != o.monitor_port and 5555 not in (o.adb_port, o.monitor_port) \
+        and 5556 not in (o.adb_port, o.monitor_port)

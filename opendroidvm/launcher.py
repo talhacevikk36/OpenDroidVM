@@ -1,13 +1,13 @@
-"""QEMU komut satiri olusturma. Iki mod:
+"""Builds the QEMU command line. Two modes:
 
-* accurate: profilin CPU modeli, cekirdek ve RAM'i birebir uygulanir.
-* fast: ayni mimaride donanim hizlandirma (KVM/WHPX/HVF), degilse cok
-  iplikli TCG; cekirdek sayisi konaga gore sinirlanir, `-cpu max` kullanilir.
+* accurate: the profile's CPU model, cores and RAM are applied as-is.
+* fast: hardware acceleration (KVM/WHPX/HVF) on a matching 64-bit host,
+  otherwise multi-threaded TCG; cores are capped to the host, `-cpu max`.
 """
 import os
+import platform
 import shlex
 from dataclasses import dataclass
-from pathlib import Path
 
 from . import bootimg, qemu
 
@@ -17,16 +17,28 @@ class Options:
     mode: str = "accurate"      # accurate | fast
     recovery: str = ""
     boot: str = ""
-    rom: str = ""               # system imaji (ROM ayri verilir)
+    rom: str = ""               # system image (ROM is supplied separately)
     userdata: str = ""
     qemu_path: str = ""
     headless: bool = False
-    ram: int = 0                # MB, 0 = profil degeri
-    cores: int = 0              # 0 = profil degeri
-    adb_port: int = 5555        # 0 = adb yonlendirme yok
-    vnc: int = -1               # >=0: VNC ekran numarasi (5900+n)
-    snapshot: bool = False      # diske yazmadan calis
-    monitor_port: int = 5556    # tus gonderme (odvm key); 0 = kapali, yalniz 127.0.0.1
+    ram: int = 0                # MB, 0 = profile value
+    cores: int = 0              # 0 = profile value
+    adb_port: int = 5555        # 0 = no adb forward
+    vnc: int = -1               # >=0: VNC display number (5900+n)
+    snapshot: bool = False      # do not write to disk
+    monitor_port: int = 5556    # for odvm key; 0 = off, 127.0.0.1 only
+
+
+def effective_vnc(o):
+    """(vnc display, reason). Falls back to VNC when there is no window system."""
+    if o.vnc >= 0 or o.headless:
+        return o.vnc, None
+    if qemu.is_termux():
+        return 0, "termux"
+    if platform.system() == "Linux" and not (os.environ.get("DISPLAY")
+                                             or os.environ.get("WAYLAND_DISPLAY")):
+        return 0, "nodisplay"
+    return -1, None
 
 
 def build(profile, o, workdir=None):
@@ -51,7 +63,7 @@ def build(profile, o, workdir=None):
         try:
             kernel, ramdisk = bootimg.extract(img, workdir or bootimg.cache_dir(img))
         except bootimg.NotBootImage:
-            pass  # zaten ham kernel (Image) olabilir
+            pass  # probably a raw kernel (Image) already
         cmd += ["-kernel", str(kernel)]
         if ramdisk:
             cmd += ["-initrd", str(ramdisk)]
@@ -68,9 +80,7 @@ def build(profile, o, workdir=None):
         cmd += ["-monitor", f"tcp:127.0.0.1:{o.monitor_port},server,nowait"]
     if o.snapshot:
         cmd += ["-snapshot"]
-    vnc = o.vnc
-    if vnc < 0 and not o.headless and qemu.is_termux():
-        vnc = 0  # Termux'ta pencere yok: VNC (localhost:5900) kullan
+    vnc, _ = effective_vnc(o)
     if vnc >= 0:
         cmd += ["-display", f"vnc=:{vnc}"]
     elif o.headless:

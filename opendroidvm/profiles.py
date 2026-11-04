@@ -1,9 +1,11 @@
-"""Cihaz profilleri (opendroidvm/profiles/*.json)."""
+"""Device profiles (opendroidvm/profiles/*.json)."""
 import json
 import os
+import re
 from dataclasses import dataclass, field
 from pathlib import Path
 
+SAFE_ID = re.compile(r"^[A-Za-z0-9._-]+$")
 PROFILE_DIR = Path(__file__).parent / "profiles"
 
 
@@ -57,7 +59,7 @@ def load_profile(path):
 
 
 def load_all(directory=None):
-    """Yerlesik profiller + kullanici profilleri (ayni id ise kullanici kazanir)."""
+    """Built-in + user profiles (the user profile wins on the same id)."""
     dirs = [Path(directory)] if directory else [PROFILE_DIR, user_dir()]
     found = {}
     for d in dirs:
@@ -67,13 +69,15 @@ def load_all(directory=None):
 
 
 def find(pid, directory=None):
+    if not SAFE_ID.match(pid or "") or pid.startswith("."):
+        return None           # blocks path tricks like ../x
     pid = pid.lower()
-    dirs = [Path(directory)] if directory else [user_dir(), PROFILE_DIR]  # kullanici oncelikli
-    for d in dirs:                       # hizli yol: <id>.json dogrudan
+    dirs = [Path(directory)] if directory else [user_dir(), PROFILE_DIR]  # user first
+    for d in dirs:                       # fast path: <id>.json directly
         f = d / f"{pid}.json"
         if f.is_file():
             return load_profile(f)
-    for p in load_all(directory):        # yavas yol: kod adi ile ara
+    for p in load_all(directory):        # slow path: match by codename
         if p.codename and p.codename.lower() == pid:
             return p
     return None

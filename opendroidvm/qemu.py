@@ -1,8 +1,11 @@
-"""QEMU bulma ve kurma."""
+"""Finding and installing QEMU."""
 import os
 import platform
 import shutil
+import socket
 import subprocess
+
+from .i18n import t
 
 
 def binary_name(arch):
@@ -29,7 +32,7 @@ def is_termux():
 
 
 def install_command():
-    """Isletim sistemine gore QEMU kurulum komutu (liste) dondurur."""
+    """Return the QEMU install command (list) for this OS."""
     sysname = platform.system()
     if is_termux():
         return ["pkg", "install", "-y", "qemu-system-aarch64-headless",
@@ -50,19 +53,19 @@ def install_command():
 def install(dry_run=False):
     cmd = install_command()
     if not cmd:
-        print("Paket yoneticisi bulunamadi; QEMU'yu elle kurun: https://www.qemu.org/download/")
+        print(t("pm_missing"))
         return 1
-    print("Calistirilacak:", " ".join(cmd))
+    print(t("will_run"), " ".join(cmd))
     if dry_run:
         return 0
     return subprocess.call(cmd)
 
 
 def host_accel(arch):
-    """Konuk mimarisi konakla ayniysa donanim hizlandirmasi dondurur.
+    """Hardware acceleration if the guest matches a 64-bit host.
 
-    Android/Termux'ta KVM yoktur. 32-bit (arm) konuk 64-bit konakta
-    hizlandirilmaz (cogu CPU 32-bit konuk kipini desteklemez).
+    Android/Termux has no KVM. 32-bit (arm) guests are never accelerated on a
+    64-bit host (most CPUs do not support the 32-bit guest mode).
     """
     m = platform.machine().lower()
     host64 = m in ("aarch64", "arm64")
@@ -74,3 +77,21 @@ def host_accel(arch):
     if system == "Linux":
         return "kvm" if os.access("/dev/kvm", os.R_OK | os.W_OK) else None
     return {"Windows": "whpx", "Darwin": "hvf"}.get(system)
+
+
+def port_free(port, host="127.0.0.1"):
+    """True if nothing is listening/bound on host:port."""
+    for fam, addr in ((socket.AF_INET, host),):
+        with socket.socket(fam, socket.SOCK_STREAM) as sk:
+            sk.settimeout(0.3)
+            if sk.connect_ex((addr, port)) == 0:
+                return False
+    return True
+
+
+def free_port(start, span=50, exclude=()):
+    """First free port in [start, start+span] not in `exclude`; None if none."""
+    for p in range(start, start + span + 1):
+        if p not in exclude and port_free(p):
+            return p
+    return None
