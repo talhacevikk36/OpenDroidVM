@@ -1,0 +1,22 @@
+{
+  "name": "Google Pixel 2",
+  "codename": "walleye",
+  "soc": "Snapdragon 835",
+  "arch": "aarch64",
+  "cpu": "cortex-a72",
+  "ram_mb": 4096,
+  "cpu_cores": 8,
+  "screen": {
+    "width": 1080,
+    "height": 1920,
+    "dpi": 420
+  },
+  "recovery": {
+    "codename": "walleye",
+    "projects": [
+      "twrp",
+      "orangefox"
+    ]
+  },
+  "notes": "Recovery imaji ayri verilir; ROM paketlenmez."
+}

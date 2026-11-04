@@ -1,0 +1,22 @@
+{
+  "name": "Huawei Nexus 6P",
+  "codename": "angler",
+  "soc": "Snapdragon 810",
+  "arch": "aarch64",
+  "cpu": "cortex-a57",
+  "ram_mb": 3072,
+  "cpu_cores": 8,
+  "screen": {
+    "width": 1440,
+    "height": 2560,
+    "dpi": 518
+  },
+  "recovery": {
+    "codename": "angler",
+    "projects": [
+      "twrp",
+      "orangefox"
+    ]
+  },
+  "notes": "Recovery imaji ayri verilir; ROM paketlenmez."
+}

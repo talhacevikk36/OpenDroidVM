@@ -1,0 +1,22 @@
+{
+  "name": "OnePlus 7 Pro",
+  "codename": "guacamole",
+  "soc": "Snapdragon 855",
+  "arch": "aarch64",
+  "cpu": "cortex-a76",
+  "ram_mb": 8192,
+  "cpu_cores": 8,
+  "screen": {
+    "width": 1440,
+    "height": 3120,
+    "dpi": 516
+  },
+  "recovery": {
+    "codename": "guacamole",
+    "projects": [
+      "twrp",
+      "orangefox"
+    ]
+  },
+  "notes": "Recovery imaji ayri verilir; ROM paketlenmez."
+}

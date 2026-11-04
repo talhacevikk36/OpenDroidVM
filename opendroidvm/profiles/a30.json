@@ -1,0 +1,22 @@
+{
+  "name": "Samsung Galaxy A30",
+  "codename": "a30",
+  "soc": "Exynos 7904",
+  "arch": "aarch64",
+  "cpu": "cortex-a72",
+  "ram_mb": 3072,
+  "cpu_cores": 8,
+  "screen": {
+    "width": 1080,
+    "height": 2340,
+    "dpi": 409
+  },
+  "recovery": {
+    "codename": "a30",
+    "projects": [
+      "twrp",
+      "orangefox"
+    ]
+  },
+  "notes": "Recovery imaji ayri verilir; ROM paketlenmez."
+}

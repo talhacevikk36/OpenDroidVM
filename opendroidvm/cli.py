@@ -54,8 +54,15 @@ def _run(a):
                          qemu_path=a.qemu or "", headless=a.headless,
                          ram=a.ram, cores=a.cores, adb_port=a.adb_port,
                          vnc=a.vnc, snapshot=a.snapshot)
-    cmd = launcher.build(p, o)
+    try:
+        cmd = launcher.build(p, o)
+    except bootimg.CorruptImage as e:
+        print("Hata:", e, file=sys.stderr)
+        return 1
     print(launcher.fmt(cmd))
+    if qemu.is_termux() and not a.headless and a.vnc < 0:
+        print("Not: Termux'ta ekran VNC ile acilir; bir VNC istemcisiyle localhost:5900'e baglan.",
+              file=sys.stderr)
     if a.dry_run:
         return 0
     if not qemu.find_qemu(p.arch, a.qemu):
@@ -87,6 +94,8 @@ def _disk(a):
 
 def _doctor(a):
     print("OpenDroidVM", __version__)
+    if qemu.is_termux():
+        print("Ortam  : Android (Termux) - KVM yok, TCG kullanilir, ekran VNC")
     print("Python :", platform.python_version(), platform.system(), platform.machine())
     print("CPU    :", os.cpu_count(), "mantiksal cekirdek")
     for arch in ("aarch64", "arm"):
@@ -102,6 +111,45 @@ def _doctor(a):
     print("Profil :", len(profiles.load_all()), "adet; kullanici klasoru:", profiles.user_dir())
     if platform.system() == "Linux" and not os.access("/dev/kvm", os.R_OK | os.W_OK):
         print("Not: /dev/kvm erisilebilir degil (KVM yok ya da kullanici 'kvm' grubunda degil).")
+    return 0
+
+
+REQUIRED = {"arch": ("aarch64", "arm"), "int": ("ram_mb", "cpu_cores")}
+
+
+def _validate(a):
+    bad = 0
+    for p in profiles.load_all():
+        errs = []
+        if p.arch not in REQUIRED["arch"]:
+            errs.append(f"arch gecersiz: {p.arch}")
+        if p.ram_mb < 256 or p.cpu_cores < 1:
+            errs.append("ram_mb/cpu_cores gecersiz")
+        if min(p.width, p.height, p.dpi) <= 0:
+            errs.append("ekran degerleri gecersiz")
+        if not p.soc or not p.name:
+            errs.append("name/soc bos")
+        if errs:
+            bad += 1
+            print(f"HATA {p.id}: " + "; ".join(errs))
+    print(f"{len(profiles.load_all())} profil kontrol edildi, {bad} hatali")
+    return 1 if bad else 0
+
+
+def _new(a):
+    d = profiles.user_dir()
+    d.mkdir(parents=True, exist_ok=True)
+    path = d / f"{a.id.lower()}.json"
+    if path.exists() and not a.force:
+        print("Zaten var (--force):", path, file=sys.stderr)
+        return 1
+    data = {"name": a.name or a.id, "codename": a.codename or a.id, "soc": a.soc,
+            "arch": a.arch, "cpu": "cortex-a15" if a.arch == "arm" else "cortex-a57",
+            "ram_mb": a.ram, "cpu_cores": a.cores,
+            "screen": {"width": a.width, "height": a.height, "dpi": a.dpi},
+            "recovery": {"codename": a.codename or a.id, "projects": ["twrp", "orangefox"]}}
+    path.write_text(json.dumps(data, indent=2, ensure_ascii=False), encoding="utf-8")
+    print("Olusturuldu:", path)
     return 0
 
 
@@ -147,6 +195,14 @@ def main(argv=None):
     s.add_argument("--force", action="store_true")
     s.set_defaults(f=_disk)
 
+    s = sp.add_parser("new", help="kendi cihaz profilini olustur")
+    s.add_argument("id"); s.add_argument("--name"); s.add_argument("--codename")
+    s.add_argument("--soc", default="Unknown"); s.add_argument("--arch", choices=["aarch64", "arm"], default="aarch64")
+    s.add_argument("--ram", type=int, default=4096); s.add_argument("--cores", type=int, default=4)
+    s.add_argument("--width", type=int, default=1080); s.add_argument("--height", type=int, default=2400)
+    s.add_argument("--dpi", type=int, default=420); s.add_argument("--force", action="store_true")
+    s.set_defaults(f=_new)
+    sp.add_parser("validate", help="profilleri dogrula").set_defaults(f=_validate)
     sp.add_parser("doctor", help="QEMU/hizlandirma durumunu kontrol et").set_defaults(f=_doctor)
     s = sp.add_parser("install-qemu"); s.add_argument("--dry-run", action="store_true")
     s.set_defaults(f=_install)

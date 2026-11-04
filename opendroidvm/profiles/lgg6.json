@@ -1,0 +1,22 @@
+{
+  "name": "LG G6",
+  "codename": "lucye",
+  "soc": "Snapdragon 821",
+  "arch": "aarch64",
+  "cpu": "cortex-a57",
+  "ram_mb": 4096,
+  "cpu_cores": 4,
+  "screen": {
+    "width": 1440,
+    "height": 2880,
+    "dpi": 564
+  },
+  "recovery": {
+    "codename": "lucye",
+    "projects": [
+      "twrp",
+      "orangefox"
+    ]
+  },
+  "notes": "Recovery imaji ayri verilir; ROM paketlenmez."
+}

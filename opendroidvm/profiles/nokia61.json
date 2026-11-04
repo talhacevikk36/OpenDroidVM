@@ -1,0 +1,22 @@
+{
+  "name": "Nokia 6.1",
+  "codename": "PL2",
+  "soc": "Snapdragon 630",
+  "arch": "aarch64",
+  "cpu": "cortex-a53",
+  "ram_mb": 3072,
+  "cpu_cores": 8,
+  "screen": {
+    "width": 1080,
+    "height": 2160,
+    "dpi": 403
+  },
+  "recovery": {
+    "codename": "PL2",
+    "projects": [
+      "twrp",
+      "orangefox"
+    ]
+  },
+  "notes": "Recovery imaji ayri verilir; ROM paketlenmez."
+}

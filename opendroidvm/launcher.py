@@ -6,7 +6,6 @@
 """
 import os
 import shlex
-import tempfile
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -49,9 +48,8 @@ def build(profile, o, workdir=None):
     if img:
         kernel, ramdisk = img, None
         try:
-            wd = workdir or tempfile.mkdtemp(prefix="odvm-")
-            kernel, ramdisk = bootimg.extract(img, wd)
-        except ValueError:
+            kernel, ramdisk = bootimg.extract(img, workdir or bootimg.cache_dir(img))
+        except bootimg.NotBootImage:
             pass  # zaten ham kernel (Image) olabilir
         cmd += ["-kernel", str(kernel)]
         if ramdisk:
@@ -66,8 +64,11 @@ def build(profile, o, workdir=None):
     cmd += ["-netdev", net, "-device", "virtio-net-pci,netdev=n0"]
     if o.snapshot:
         cmd += ["-snapshot"]
-    if o.vnc >= 0:
-        cmd += ["-display", f"vnc=:{o.vnc}"]
+    vnc = o.vnc
+    if vnc < 0 and not o.headless and qemu.is_termux():
+        vnc = 0  # Termux'ta pencere yok: VNC (localhost:5900) kullan
+    if vnc >= 0:
+        cmd += ["-display", f"vnc=:{vnc}"]
     elif o.headless:
         cmd += ["-display", "none", "-serial", "stdio"]
     return cmd

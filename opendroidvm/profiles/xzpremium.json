@@ -1,0 +1,22 @@
+{
+  "name": "Sony Xperia XZ Premium",
+  "codename": "maple",
+  "soc": "Snapdragon 835",
+  "arch": "aarch64",
+  "cpu": "cortex-a72",
+  "ram_mb": 4096,
+  "cpu_cores": 8,
+  "screen": {
+    "width": 2160,
+    "height": 3840,
+    "dpi": 806
+  },
+  "recovery": {
+    "codename": "maple",
+    "projects": [
+      "twrp",
+      "orangefox"
+    ]
+  },
+  "notes": "Recovery imaji ayri verilir; ROM paketlenmez."
+}
