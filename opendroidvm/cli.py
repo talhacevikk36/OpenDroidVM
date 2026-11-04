@@ -7,7 +7,7 @@ import subprocess
 import sys
 from dataclasses import asdict
 
-from . import __version__, bootimg, launcher, profiles, qemu
+from . import __version__, bootimg, keys, launcher, panel, profiles, qemu
 
 
 def _list(a):
@@ -53,7 +53,7 @@ def _run(a):
                          rom=a.rom or "", userdata=a.userdata or "",
                          qemu_path=a.qemu or "", headless=a.headless,
                          ram=a.ram, cores=a.cores, adb_port=a.adb_port,
-                         vnc=a.vnc, snapshot=a.snapshot)
+                         vnc=a.vnc, snapshot=a.snapshot, monitor_port=a.monitor_port)
     try:
         cmd = launcher.build(p, o)
     except bootimg.CorruptImage as e:
@@ -153,6 +153,33 @@ def _new(a):
     return 0
 
 
+def _key(a):
+    if a.list or not a.name:
+        for k, (q, code) in sorted(keys.KEYS.items()):
+            print(f"{k:9} qemu={q or '-':12} android={code}")
+        return 0
+    try:
+        sent = keys.press(a.name, a.via, a.port, a.hold, a.serial)
+    except KeyError as e:
+        print(e.args[0], file=sys.stderr)
+        return 1
+    except (OSError, RuntimeError, subprocess.CalledProcessError) as e:
+        print(f"Gonderilemedi: {e}\nVM `odvm run` ile baslatildi mi? (monitor portu {a.port})",
+              file=sys.stderr)
+        return 1
+    print("gonderildi:", sent)
+    return 0
+
+
+def _panel(a):
+    try:
+        panel.run(a.port, a.via, a.serial)
+    except RuntimeError as e:
+        print(e, file=sys.stderr)
+        return 1
+    return 0
+
+
 def _install(a):
     return qemu.install(a.dry_run)
 
@@ -182,6 +209,8 @@ def main(argv=None):
     s.add_argument("--adb-port", type=int, default=5555, help="0 = kapali")
     s.add_argument("--vnc", type=int, default=-1, help="VNC ekran no (5900+N)")
     s.add_argument("--snapshot", action="store_true", help="diske yazma")
+    s.add_argument("--monitor-port", type=int, default=keys.DEFAULT_MONITOR_PORT,
+                   help="tus/monitor portu (127.0.0.1), 0 = kapali")
     s.add_argument("--headless", action="store_true")
     s.add_argument("--dry-run", action="store_true")
     s.set_defaults(f=_run)
@@ -202,6 +231,17 @@ def main(argv=None):
     s.add_argument("--width", type=int, default=1080); s.add_argument("--height", type=int, default=2400)
     s.add_argument("--dpi", type=int, default=420); s.add_argument("--force", action="store_true")
     s.set_defaults(f=_new)
+    for nm, fn, hp in (("key", _key, "calisan VM'e tus gonder (ses, guc, home...)"),
+                       ("panel", _panel, "tus paneli (tkinter)")):
+        s = sp.add_parser(nm, help=hp)
+        if nm == "key":
+            s.add_argument("name", nargs="?", help="volup voldown power home back menu mute recents")
+            s.add_argument("--list", action="store_true")
+            s.add_argument("--hold", type=int, default=0, help="ms; uzun basma (guc menusu icin 1000)")
+        s.add_argument("--via", choices=["monitor", "adb"], default="monitor")
+        s.add_argument("--port", type=int, default=keys.DEFAULT_MONITOR_PORT)
+        s.add_argument("--serial", default="localhost:5555")
+        s.set_defaults(f=fn)
     sp.add_parser("validate", help="profilleri dogrula").set_defaults(f=_validate)
     sp.add_parser("doctor", help="QEMU/hizlandirma durumunu kontrol et").set_defaults(f=_doctor)
     s = sp.add_parser("install-qemu"); s.add_argument("--dry-run", action="store_true")

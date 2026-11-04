@@ -26,6 +26,7 @@ class Options:
     adb_port: int = 5555        # 0 = adb yonlendirme yok
     vnc: int = -1               # >=0: VNC ekran numarasi (5900+n)
     snapshot: bool = False      # diske yazmadan calis
+    monitor_port: int = 5556    # tus gonderme (odvm key); 0 = kapali, yalniz 127.0.0.1
 
 
 def build(profile, o, workdir=None):
@@ -56,12 +57,15 @@ def build(profile, o, workdir=None):
             cmd += ["-initrd", str(ramdisk)]
         cmd += ["-append", profile.cmdline]
     for i, path in enumerate(p for p in (o.rom, o.userdata) if p):
-        cmd += ["-drive", f"file={path},format=raw,if=none,id=d{i}",
+        opts = ",cache=unsafe,aio=threads" if o.mode == "fast" else ""
+        cmd += ["-drive", f"file={path},format=raw,if=none,id=d{i}{opts}",
                 "-device", f"virtio-blk-device,drive=d{i}"]
     cmd += ["-device", f"virtio-gpu-pci,xres={profile.width},yres={profile.height}",
             "-device", "virtio-tablet-pci", "-device", "virtio-keyboard-pci"]
     net = "user,id=n0" + (f",hostfwd=tcp::{o.adb_port}-:5555" if o.adb_port else "")
     cmd += ["-netdev", net, "-device", "virtio-net-pci,netdev=n0"]
+    if o.monitor_port:
+        cmd += ["-monitor", f"tcp:127.0.0.1:{o.monitor_port},server,nowait"]
     if o.snapshot:
         cmd += ["-snapshot"]
     vnc = o.vnc

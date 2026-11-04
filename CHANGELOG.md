@@ -1,5 +1,9 @@
 # Degisiklikler
 
+## 0.5.0
+- Donanim tuslari: `odvm key` (ses +/-, guc, home, back, menu...) ve `odvm panel`; monitor uzerinden, adb gerekmez
+- Hizli mod: disk onbellegi (`cache=unsafe`), profil aramada hiz artisi
+
 ## 0.4.0
 - Android (Termux) destegi: `scripts/install-termux.sh`, KVM olmadan TCG, ekran VNC
 - Yeni komutlar: `odvm new`, `odvm validate`
