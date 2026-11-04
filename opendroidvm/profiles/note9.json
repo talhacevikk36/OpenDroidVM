@@ -1,0 +1,22 @@
+{
+  "name": "Samsung Galaxy Note 9",
+  "codename": "crownlte",
+  "soc": "Exynos 9810",
+  "arch": "aarch64",
+  "cpu": "cortex-a72",
+  "ram_mb": 6144,
+  "cpu_cores": 8,
+  "screen": {
+    "width": 1440,
+    "height": 2960,
+    "dpi": 516
+  },
+  "recovery": {
+    "codename": "crownlte",
+    "projects": [
+      "twrp",
+      "orangefox"
+    ]
+  },
+  "notes": "Recovery image is supplied separately; no ROM is bundled."
+}

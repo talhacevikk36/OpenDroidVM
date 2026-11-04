@@ -21,7 +21,10 @@ If a port is already taken (another VM, a real emulator), a free one is picked a
 ## 4. Keys
 `odvm key volup` connects to the monitor socket and sends `sendkey volumeup`. QEMU's virtio keyboard turns that into a Linux input event (`KEY_VOLUMEUP`), which Android's key layout maps to the volume key. `--hold` sends a held key (long press). Keys QEMU cannot produce (`recents`, `camera`) go through `adb shell input keyevent`.
 
-## 5. QEMU installation
+## 5. Recovery downloader
+`recovery.py` reads the TWRP device page (`https://dl.twrp.me/<codename>/`), picks the newest `twrp-*.img` (or the one matching `--version`), and downloads it with the page URL as `Referer` (the site rejects requests without it). The file is streamed to `*.part`, rejected if the server returned an HTML page instead of an image, then renamed. `.img.tar` files are unpacked. The result and its origin URL go to `recovery/<id>/`.
+
+## 6. QEMU installation
 `odvm install-qemu` picks the package manager (winget, apt, dnf, pacman, brew, or `pkg` on Termux) and runs it. `odvm doctor` reports what was found and which acceleration is available.
 
 ## What it cannot do

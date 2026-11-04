@@ -1,0 +1,22 @@
+{
+  "name": "Samsung Galaxy M31",
+  "codename": "m31",
+  "soc": "Exynos 9611",
+  "arch": "aarch64",
+  "cpu": "cortex-a72",
+  "ram_mb": 6144,
+  "cpu_cores": 8,
+  "screen": {
+    "width": 1080,
+    "height": 2340,
+    "dpi": 403
+  },
+  "recovery": {
+    "codename": "m31",
+    "projects": [
+      "twrp",
+      "orangefox"
+    ]
+  },
+  "notes": "Recovery image is supplied separately; no ROM is bundled."
+}

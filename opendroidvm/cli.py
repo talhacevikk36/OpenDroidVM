@@ -6,7 +6,7 @@ import subprocess
 import sys
 from dataclasses import asdict
 
-from . import __version__, bootimg, i18n, keys, launcher, panel, profiles, qemu
+from . import __version__, bootimg, i18n, keys, launcher, panel, profiles, qemu, recovery
 from .i18n import t
 
 
@@ -61,6 +61,12 @@ def _run(a):
     if not p:
         print(t("profile_not_found", x=a.device), file=sys.stderr)
         return 1
+    if a.recovery == "auto":
+        a.recovery = recovery.find_local(p.id)
+        if not a.recovery:
+            print(t("auto_missing", id=p.id, out="recovery"), file=sys.stderr)
+            return 1
+        a.recovery = str(a.recovery)
     for f in (a.recovery, a.boot, a.rom, a.userdata):
         if f and not os.path.isfile(f):
             print(t("file_not_found", x=f), file=sys.stderr)
@@ -200,6 +206,35 @@ def _panel(a):
     return 0
 
 
+def _fetch(a):
+    ids = list(recovery.RECOMMENDED) if a.all else list(a.devices)
+    if not ids:
+        print(t("fetch_none"), file=sys.stderr)
+        return 1
+    ok = 0
+    for pid in ids:
+        p = profiles.find(pid)
+        if not p:
+            why, good = t("profile_not_found", x=pid), None
+        else:
+            try:
+                good = recovery.fetch_profile(p, a.out, a.version)
+            except recovery.FetchError as e:
+                why, good = str(e), None
+        if good:
+            ok += 1
+            mb = round(os.path.getsize(good) / 1048576, 1)
+            print(t("fetch_ok", id=pid, path=good, mb=mb))
+            if a.annotate:
+                print(f"::notice::{pid} OK {good.name} {mb}MB")
+        else:
+            print(t("fetch_fail", id=pid, why=why), file=sys.stderr)
+            if a.annotate:
+                print(f"::warning::{pid} FAIL {why}")
+    print(t("fetch_summary", ok=ok, n=len(ids), out=a.out))
+    return 0 if ok else 1
+
+
 def _install(a):
     return qemu.install(a.dry_run)
 
@@ -233,7 +268,8 @@ def main(argv=None):
     s = sp.add_parser("run", help=t("h_run"))
     s.add_argument("device")
     s.add_argument("--mode", choices=["accurate", "fast"], default="accurate")
-    s.add_argument("--recovery"); s.add_argument("--boot")
+    s.add_argument("--recovery", help="image path, or 'auto' = newest in recovery/<id>/")
+    s.add_argument("--boot")
     s.add_argument("--rom", help=t("h_rom"))
     s.add_argument("--userdata"); s.add_argument("--qemu")
     s.add_argument("--ram", type=int, default=0, help=t("h_ram"))
@@ -276,6 +312,13 @@ def main(argv=None):
         s.add_argument("--serial", default="localhost:5555")
         s.set_defaults(f=fn)
 
+    s = sp.add_parser("fetch-recovery", help=t("h_fetch"))
+    s.add_argument("devices", nargs="*")
+    s.add_argument("--all", action="store_true", help=t("h_fetch_all"))
+    s.add_argument("--out", default="recovery", help=t("h_fetch_out"))
+    s.add_argument("--version", help="e.g. 3.7.0")
+    s.add_argument("--annotate", action="store_true", help=argparse.SUPPRESS)
+    s.set_defaults(f=_fetch)
     sp.add_parser("validate", help=t("h_validate")).set_defaults(f=_validate)
     sp.add_parser("doctor", help=t("h_doctor")).set_defaults(f=_doctor)
     s = sp.add_parser("install-qemu", help=t("h_install")); s.add_argument("--dry-run", action="store_true")

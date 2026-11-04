@@ -2,7 +2,7 @@
 
 # OpenDroidVM
 
-Android cihaz profilleriyle QEMU uzerinde recovery (TWRP, OrangeFox vb.) ve ROM denemek icin arac. 51 cihaz profili icerir. Profil arama sitesi: https://talhacevikk36.github.io/OpenDroidVM/
+Android cihaz profilleriyle QEMU uzerinde recovery (TWRP, OrangeFox vb.) ve ROM denemek icin arac. 70 cihaz profili icerir. Profil arama sitesi: https://talhacevikk36.github.io/OpenDroidVM/
 
 ## Kurulum
 
@@ -35,6 +35,7 @@ odvm extract twrp.img --out cikti                # kernel + ramdisk
 odvm create-disk userdata.img 4096               # bos disk
 odvm new mycihaz --soc "X SoC" --ram 4096        # kendi profilin
 odvm validate                                    # profilleri dogrula
+odvm fetch-recovery --all                        # resmi TWRP imajlarini indir
 odvm key volup                                   # calisan VM'e ses +
 odvm key power --hold 1000                       # uzun bas: guc menusu
 odvm panel                                       # tus paneli (tkinter)
@@ -46,6 +47,25 @@ odvm panel                                       # tus paneli (tkinter)
 - `--mode fast`: 64-bit ayni mimaride KVM/WHPX/HVF, degilse cok iplikli TCG (`-cpu max`).
 - `--ram`, `--cores` profili ezer. `--adb-port` (varsayilan 5555, 0 = kapali), `--vnc N`, `--snapshot`.
 - Kendi profillerin `~/.config/opendroidvm/profiles/` (Windows: `%APPDATA%\opendroidvm\profiles`) icinde durur ve ayni isimdeki yerlesik profili ezer.
+
+## Recovery imajlari (TWRP)
+
+Depoda hicbir imaj yoktur. `odvm fetch-recovery` istek uzerine **resmi TWRP** imajlarini twrp.me'den `recovery/` klasorune indirir (`recovery/<id>/twrp-....img` + `SOURCE.txt`). TWRP GPL-3.0 lisansli yazilimdir.
+
+```
+odvm fetch-recovery s10 pixel3          # belirli cihazlar
+odvm fetch-recovery --all               # onerilen 20 cihaz
+odvm fetch-recovery s7 --version 3.6.0  # belirli TWRP surumu
+odvm run s10 --recovery auto            # recovery/s10/ icindeki en yeni imaj
+```
+
+Onerilen 20: pixel, pixel2, pixel3, nexus5, nexus5x, nexus6p, s4, s5, s7, s8, s9, s10, note4, oneplus3, oneplus5, oneplus6, oneplus7pro, pocof1, mia2, redminote7. Resmi TWRP sayfasi olmayan cihaz net bir hata verir, digerleri devam eder. Samsung `.img.tar` dosyalari otomatik acilir. Klasor git tarafindan yok sayilir (her imaj onlarca MB).
+
+**fetch-recovery** GitHub Action'i ayni indirmeyi GitHub sunucularinda yapip zip olarak sunabilir (Actions sekmesi -> fetch-recovery -> Run workflow).
+
+## Hazir calistirilabilir dosyalar (Python gerekmez)
+
+Her surumde `odvm-windows-x64.exe`, `odvm-linux-x64` ve `odvm-macos` bulunur (**exe** workflow'u PyInstaller ile uretir, tek dosya, profiller dahil). QEMU yine gerekir: once `odvm install-qemu` calistir.
 
 ## Tuslar (ses, guc, home...)
 

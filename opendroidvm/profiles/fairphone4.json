@@ -1,0 +1,22 @@
+{
+  "name": "Fairphone 4",
+  "codename": "FP4",
+  "soc": "Snapdragon 750G",
+  "arch": "aarch64",
+  "cpu": "cortex-a76",
+  "ram_mb": 6144,
+  "cpu_cores": 8,
+  "screen": {
+    "width": 1080,
+    "height": 2340,
+    "dpi": 409
+  },
+  "recovery": {
+    "codename": "FP4",
+    "projects": [
+      "twrp",
+      "orangefox"
+    ]
+  },
+  "notes": "Recovery image is supplied separately; no ROM is bundled."
+}

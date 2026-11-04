@@ -33,6 +33,8 @@ def parse(data):
     else:
         ksz, _, rsz = struct.unpack_from("<III", data, 8)
         page = struct.unpack_from("<I", data, 36)[0]
+    if page < 512 or page & (page - 1):      # must be a power of two (0 would divide by zero)
+        raise CorruptImage(t("corrupt"))
     koff = page
     roff = koff + _align(ksz, page)
     if ksz == 0 or koff + ksz > len(data) or roff + rsz > len(data):

@@ -1,0 +1,22 @@
+{
+  "name": "OnePlus Nord",
+  "codename": "avicii",
+  "soc": "Snapdragon 765G",
+  "arch": "aarch64",
+  "cpu": "cortex-a76",
+  "ram_mb": 8192,
+  "cpu_cores": 8,
+  "screen": {
+    "width": 1080,
+    "height": 2400,
+    "dpi": 408
+  },
+  "recovery": {
+    "codename": "avicii",
+    "projects": [
+      "twrp",
+      "orangefox"
+    ]
+  },
+  "notes": "Recovery image is supplied separately; no ROM is bundled."
+}

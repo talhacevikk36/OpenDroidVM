@@ -1,0 +1,22 @@
+{
+  "name": "Samsung Galaxy A71",
+  "codename": "a71",
+  "soc": "Snapdragon 730",
+  "arch": "aarch64",
+  "cpu": "cortex-a76",
+  "ram_mb": 6144,
+  "cpu_cores": 8,
+  "screen": {
+    "width": 1080,
+    "height": 2400,
+    "dpi": 411
+  },
+  "recovery": {
+    "codename": "a71",
+    "projects": [
+      "twrp",
+      "orangefox"
+    ]
+  },
+  "notes": "Recovery image is supplied separately; no ROM is bundled."
+}

@@ -1,0 +1,22 @@
+{
+  "name": "Google Pixel 4",
+  "codename": "flame",
+  "soc": "Snapdragon 855",
+  "arch": "aarch64",
+  "cpu": "cortex-a76",
+  "ram_mb": 6144,
+  "cpu_cores": 8,
+  "screen": {
+    "width": 1080,
+    "height": 2280,
+    "dpi": 444
+  },
+  "recovery": {
+    "codename": "flame",
+    "projects": [
+      "twrp",
+      "orangefox"
+    ]
+  },
+  "notes": "Recovery image is supplied separately; no ROM is bundled."
+}
