@@ -80,12 +80,21 @@ def host_accel(arch):
 
 
 def port_free(port, host="127.0.0.1"):
-    """True if nothing is listening/bound on host:port."""
-    for fam, addr in ((socket.AF_INET, host),):
-        with socket.socket(fam, socket.SOCK_STREAM) as sk:
-            sk.settimeout(0.3)
-            if sk.connect_ex((addr, port)) == 0:
-                return False
+    """True if the port can be bound on loopback and on all interfaces.
+
+    Binding is reliable on every OS; a connect() probe is not (on Windows and
+    macOS a non-blocking connect returns before the result is known).
+    """
+    for addr in dict.fromkeys((host, "0.0.0.0")):
+        sk = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        try:
+            if os.name == "posix":   # on Windows SO_REUSEADDR would allow port hijacking
+                sk.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+            sk.bind((addr, port))
+        except OSError:
+            return False
+        finally:
+            sk.close()
     return True
 
 
