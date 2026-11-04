@@ -129,3 +129,11 @@ def test_ports_never_collide(monkeypatch):
     assert cli._resolve_ports(o)
     assert o.adb_port != o.monitor_port and 5555 not in (o.adb_port, o.monitor_port) \
         and 5556 not in (o.adb_port, o.monitor_port)
+
+
+def test_zero_page_size_is_corrupt_not_crash():
+    import pytest
+    hdr = bytearray(4096); hdr[:8] = b"ANDROID!"
+    struct.pack_into("<III", hdr, 8, 100, 0, 100)   # page size left at 0
+    with pytest.raises(bootimg.CorruptImage):
+        bootimg.parse(bytes(hdr))

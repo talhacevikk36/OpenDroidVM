@@ -2,7 +2,7 @@
 
 # OpenDroidVM
 
-Try Android recoveries (TWRP, OrangeFox, ...) and ROMs on QEMU using device profiles. Ships with 51 device profiles. Profile browser: https://talhacevikk36.github.io/OpenDroidVM/
+Try Android recoveries (TWRP, OrangeFox, ...) and ROMs on QEMU using device profiles. Ships with 70 device profiles. Profile browser: https://talhacevikk36.github.io/OpenDroidVM/
 
 How it works under the hood: [docs/how-it-works.md](docs/how-it-works.md)
 
@@ -37,6 +37,7 @@ odvm extract twrp.img --out out                  # kernel + ramdisk
 odvm create-disk userdata.img 4096               # empty disk
 odvm new mydevice --soc "X SoC" --ram 4096       # your own profile
 odvm validate                                    # validate profiles
+odvm fetch-recovery --all                        # download official TWRP images
 odvm key volup                                   # volume up on the running VM
 odvm key power --hold 1000                       # long press: power menu
 odvm panel                                       # key panel (tkinter)
@@ -48,6 +49,25 @@ odvm panel                                       # key panel (tkinter)
 - `--mode fast`: KVM/WHPX/HVF on a matching 64-bit host, otherwise multi-threaded TCG (`-cpu max`).
 - `--ram`, `--cores` override the profile. `--adb-port` (default 5555, 0 = off), `--vnc N`, `--snapshot`.
 - Your own profiles live in `~/.config/opendroidvm/profiles/` (Windows: `%APPDATA%\opendroidvm\profiles`) and override built-ins with the same id.
+
+## Recovery images (TWRP)
+
+Nothing is bundled in the repository. `odvm fetch-recovery` downloads **official TWRP** images from twrp.me on request into a `recovery/` folder (`recovery/<id>/twrp-....img` + `SOURCE.txt`). TWRP is GPL-3.0 software.
+
+```
+odvm fetch-recovery s10 pixel3          # specific devices
+odvm fetch-recovery --all               # the 20 recommended devices
+odvm fetch-recovery s7 --version 3.6.0  # a specific TWRP version
+odvm run s10 --recovery auto            # newest image from recovery/s10/
+```
+
+Recommended 20: pixel, pixel2, pixel3, nexus5, nexus5x, nexus6p, s4, s5, s7, s8, s9, s10, note4, oneplus3, oneplus5, oneplus6, oneplus7pro, pocof1, mia2, redminote7. A device without an official TWRP page reports a clear error and the rest continue. Samsung `.img.tar` files are unpacked automatically. The folder is git-ignored (each image is tens of MB).
+
+The **fetch-recovery** GitHub Action can also download them on GitHub's servers and offer a zip (Actions tab → fetch-recovery → Run workflow).
+
+## Ready-made executables (no Python needed)
+
+Each release contains `odvm-windows-x64.exe`, `odvm-linux-x64` and `odvm-macos` (built by the **exe** workflow with PyInstaller, one file, profiles included). QEMU is still required: run `odvm install-qemu` first.
 
 ## Keys (volume, power, home...)
 

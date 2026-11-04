@@ -1,0 +1,22 @@
+{
+  "name": "Samsung Galaxy S20 FE",
+  "codename": "r8s",
+  "soc": "Exynos 990",
+  "arch": "aarch64",
+  "cpu": "cortex-a76",
+  "ram_mb": 6144,
+  "cpu_cores": 8,
+  "screen": {
+    "width": 1080,
+    "height": 2400,
+    "dpi": 407
+  },
+  "recovery": {
+    "codename": "r8s",
+    "projects": [
+      "twrp",
+      "orangefox"
+    ]
+  },
+  "notes": "Recovery image is supplied separately; no ROM is bundled."
+}

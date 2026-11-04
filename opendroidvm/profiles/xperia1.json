@@ -1,0 +1,22 @@
+{
+  "name": "Sony Xperia 1",
+  "codename": "j9110",
+  "soc": "Snapdragon 855",
+  "arch": "aarch64",
+  "cpu": "cortex-a76",
+  "ram_mb": 6144,
+  "cpu_cores": 8,
+  "screen": {
+    "width": 1644,
+    "height": 3840,
+    "dpi": 643
+  },
+  "recovery": {
+    "codename": "j9110",
+    "projects": [
+      "twrp",
+      "orangefox"
+    ]
+  },
+  "notes": "Recovery image is supplied separately; no ROM is bundled."
+}

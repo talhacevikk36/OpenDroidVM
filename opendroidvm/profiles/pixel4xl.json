@@ -1,0 +1,22 @@
+{
+  "name": "Google Pixel 4 XL",
+  "codename": "coral",
+  "soc": "Snapdragon 855",
+  "arch": "aarch64",
+  "cpu": "cortex-a76",
+  "ram_mb": 6144,
+  "cpu_cores": 8,
+  "screen": {
+    "width": 1440,
+    "height": 3040,
+    "dpi": 537
+  },
+  "recovery": {
+    "codename": "coral",
+    "projects": [
+      "twrp",
+      "orangefox"
+    ]
+  },
+  "notes": "Recovery image is supplied separately; no ROM is bundled."
+}

@@ -1,0 +1,60 @@
+name: exe
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-latest
+            name: odvm-windows-x64.exe
+            sep: ";"
+          - os: ubuntu-latest
+            name: odvm-linux-x64
+            sep: ":"
+          - os: macos-latest
+            name: odvm-macos
+            sep: ":"
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: python -m pip install . pyinstaller
+      - name: Build single-file executable
+        shell: bash
+        run: |
+          pyinstaller --onefile --name odvm \
+            --add-data "opendroidvm/profiles${{ matrix.sep }}opendroidvm/profiles" \
+            tools/odvm_entry.py
+          ls dist
+      - name: Smoke test
+        shell: bash
+        run: |
+          EXE=dist/odvm; [ -f dist/odvm.exe ] && EXE=dist/odvm.exe
+          "$EXE" --version
+          "$EXE" list --min-ram 8192 | tail -3
+          "$EXE" validate
+          "$EXE" run pixel --mode fast --dry-run | head -c 200; echo
+          cp "$EXE" "dist/${{ matrix.name }}"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.name }}
+          path: dist/${{ matrix.name }}
+      - name: Attach to the release
+        if: startsWith(github.ref, 'refs/tags/v')
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          for i in 1 2 3 4 5 6; do
+            gh release upload "$GITHUB_REF_NAME" "dist/${{ matrix.name }}" --clobber && exit 0
+            sleep 20
+          done
+          exit 1

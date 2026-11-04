@@ -1,0 +1,22 @@
+{
+  "name": "Xiaomi Mi 11",
+  "codename": "venus",
+  "soc": "Snapdragon 888",
+  "arch": "aarch64",
+  "cpu": "cortex-a76",
+  "ram_mb": 8192,
+  "cpu_cores": 8,
+  "screen": {
+    "width": 1440,
+    "height": 3200,
+    "dpi": 515
+  },
+  "recovery": {
+    "codename": "venus",
+    "projects": [
+      "twrp",
+      "orangefox"
+    ]
+  },
+  "notes": "Recovery image is supplied separately; no ROM is bundled."
+}

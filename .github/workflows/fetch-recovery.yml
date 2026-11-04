@@ -1,0 +1,33 @@
+name: fetch-recovery
+on:
+  workflow_dispatch:
+    inputs:
+      devices:
+        description: "Space separated profile ids; empty = the 20 recommended devices"
+        required: false
+        default: ""
+permissions:
+  contents: read
+jobs:
+  fetch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: python -m pip install .
+      - name: Download official TWRP images
+        run: |
+          if [ -z "${{ inputs.devices }}" ]; then
+            odvm fetch-recovery --all --out recovery --annotate || true
+          else
+            odvm fetch-recovery ${{ inputs.devices }} --out recovery --annotate || true
+          fi
+          du -sh recovery 2>/dev/null || true
+      - uses: actions/upload-artifact@v4
+        with:
+          name: recovery-images
+          path: recovery
+          if-no-files-found: warn
+          retention-days: 14

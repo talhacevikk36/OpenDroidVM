@@ -1,0 +1,22 @@
+{
+  "name": "Xiaomi Poco F3",
+  "codename": "alioth",
+  "soc": "Snapdragon 870",
+  "arch": "aarch64",
+  "cpu": "cortex-a76",
+  "ram_mb": 6144,
+  "cpu_cores": 8,
+  "screen": {
+    "width": 1080,
+    "height": 2400,
+    "dpi": 395
+  },
+  "recovery": {
+    "codename": "alioth",
+    "projects": [
+      "twrp",
+      "orangefox"
+    ]
+  },
+  "notes": "Recovery image is supplied separately; no ROM is bundled."
+}

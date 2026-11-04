@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.7.0
+- `odvm fetch-recovery`: downloads official TWRP images into `recovery/` (20 recommended devices with `--all`); `odvm run --recovery auto`
+- 19 new device profiles (70 total): Pixel 3a/4/4 XL/6a, Note 9/10, S20 FE, S21, A71, M31, OnePlus 9/Nord, Redmi Note 8 Pro, Poco F3, Mi 11, Xperia 1, Nothing Phone (1), Fairphone 3/4
+- GitHub Actions: `exe` (Windows/Linux/macOS single-file executables attached to releases), `fetch-recovery` (manual)
+- Fix: boot image with page size 0 crashed with ZeroDivisionError; now reported as corrupt
+
 ## 0.6.0
 - English interface and docs (Turkish kept: `--lang tr`, `README.tr.md`); `docs/how-it-works.md`
 - Fix: two VMs / a real emulator on the same host ports (adb 5555, monitor 5556) now get free ports automatically
