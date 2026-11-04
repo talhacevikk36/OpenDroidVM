@@ -1,0 +1,22 @@
+{
+  "name": "Google Nexus 5X",
+  "codename": "bullhead",
+  "soc": "Snapdragon 808",
+  "arch": "aarch64",
+  "cpu": "cortex-a57",
+  "ram_mb": 2048,
+  "cpu_cores": 6,
+  "screen": {
+    "width": 1080,
+    "height": 1920,
+    "dpi": 424
+  },
+  "recovery": {
+    "codename": "bullhead",
+    "projects": [
+      "twrp",
+      "orangefox"
+    ]
+  },
+  "notes": "Recovery imaji ayri verilir; ROM paketlenmez."
+}

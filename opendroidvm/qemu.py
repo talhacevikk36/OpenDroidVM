@@ -1,4 +1,5 @@
 """QEMU bulma ve kurma."""
+import os
 import platform
 import shutil
 import subprocess
@@ -23,9 +24,16 @@ def find_qemu(arch, explicit=None):
     return None
 
 
+def is_termux():
+    return "TERMUX_VERSION" in os.environ or "com.termux" in os.environ.get("PREFIX", "")
+
+
 def install_command():
     """Isletim sistemine gore QEMU kurulum komutu (liste) dondurur."""
     sysname = platform.system()
+    if is_termux():
+        return ["pkg", "install", "-y", "qemu-system-aarch64-headless",
+                "qemu-system-arm-headless"]
     if sysname == "Windows":
         return ["winget", "install", "-e", "--id", "SoftwareFreedomConservancy.QEMU"]
     if sysname == "Darwin":
@@ -51,10 +59,18 @@ def install(dry_run=False):
 
 
 def host_accel(arch):
-    """Konuk mimarisi konakla ayniysa donanim hizlandirmasi dondurur."""
+    """Konuk mimarisi konakla ayniysa donanim hizlandirmasi dondurur.
+
+    Android/Termux'ta KVM yoktur. 32-bit (arm) konuk 64-bit konakta
+    hizlandirilmaz (cogu CPU 32-bit konuk kipini desteklemez).
+    """
     m = platform.machine().lower()
     host64 = m in ("aarch64", "arm64")
-    host_arm = host64 or m.startswith("arm")
-    if not host_arm or (arch == "aarch64" and not host64):
+    if is_termux() or not host64:
         return None
-    return {"Linux": "kvm", "Windows": "whpx", "Darwin": "hvf"}.get(platform.system())
+    if arch != "aarch64":
+        return None
+    system = platform.system()
+    if system == "Linux":
+        return "kvm" if os.access("/dev/kvm", os.R_OK | os.W_OK) else None
+    return {"Windows": "whpx", "Darwin": "hvf"}.get(system)

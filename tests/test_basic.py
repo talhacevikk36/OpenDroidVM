@@ -40,3 +40,25 @@ def test_user_profile(tmp_path, monkeypatch):
     d.mkdir(parents=True)
     (d / "mydev.json").write_text(json.dumps({"name": "My Dev", "ram_mb": 999}))
     assert profiles.find("mydev").ram_mb == 999
+
+
+def test_corrupt_and_raw(tmp_path):
+    import pytest
+    page = 2048
+    hdr = bytearray(page); hdr[:8] = b"ANDROID!"
+    import struct
+    struct.pack_into("<III", hdr, 8, 999999, 0, 4); struct.pack_into("<I", hdr, 36, page)
+    with pytest.raises(bootimg.CorruptImage):
+        bootimg.parse(bytes(hdr))
+    with pytest.raises(bootimg.NotBootImage):
+        bootimg.parse(b"RAWKERNEL" * 10)
+
+
+def test_32bit_guest_never_hw_accel():
+    from opendroidvm import qemu
+    assert qemu.host_accel("arm") is None
+
+
+def test_validate_all_profiles():
+    from opendroidvm import cli
+    assert cli.main(["validate"]) == 0

@@ -1,0 +1,22 @@
+{
+  "name": "Samsung Galaxy J5 (2016)",
+  "codename": "j5xnlte",
+  "soc": "Snapdragon 410",
+  "arch": "aarch64",
+  "cpu": "cortex-a53",
+  "ram_mb": 2048,
+  "cpu_cores": 4,
+  "screen": {
+    "width": 720,
+    "height": 1280,
+    "dpi": 294
+  },
+  "recovery": {
+    "codename": "j5xnlte",
+    "projects": [
+      "twrp",
+      "orangefox"
+    ]
+  },
+  "notes": "Recovery imaji ayri verilir; ROM paketlenmez."
+}

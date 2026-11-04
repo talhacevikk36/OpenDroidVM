@@ -1,0 +1,22 @@
+{
+  "name": "Huawei P30 Lite",
+  "codename": "marie",
+  "soc": "Kirin 710",
+  "arch": "aarch64",
+  "cpu": "cortex-a72",
+  "ram_mb": 4096,
+  "cpu_cores": 8,
+  "screen": {
+    "width": 1080,
+    "height": 2312,
+    "dpi": 409
+  },
+  "recovery": {
+    "codename": "marie",
+    "projects": [
+      "twrp",
+      "orangefox"
+    ]
+  },
+  "notes": "Recovery imaji ayri verilir; ROM paketlenmez."
+}

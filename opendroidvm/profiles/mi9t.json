@@ -1,0 +1,22 @@
+{
+  "name": "Xiaomi Mi 9T",
+  "codename": "davinci",
+  "soc": "Snapdragon 730",
+  "arch": "aarch64",
+  "cpu": "cortex-a76",
+  "ram_mb": 6144,
+  "cpu_cores": 8,
+  "screen": {
+    "width": 1080,
+    "height": 2340,
+    "dpi": 403
+  },
+  "recovery": {
+    "codename": "davinci",
+    "projects": [
+      "twrp",
+      "orangefox"
+    ]
+  },
+  "notes": "Recovery imaji ayri verilir; ROM paketlenmez."
+}

@@ -1,0 +1,22 @@
+{
+  "name": "Sony Xperia 5 II",
+  "codename": "pdx206",
+  "soc": "Snapdragon 865",
+  "arch": "aarch64",
+  "cpu": "cortex-a76",
+  "ram_mb": 8192,
+  "cpu_cores": 8,
+  "screen": {
+    "width": 1080,
+    "height": 2520,
+    "dpi": 449
+  },
+  "recovery": {
+    "codename": "pdx206",
+    "projects": [
+      "twrp",
+      "orangefox"
+    ]
+  },
+  "notes": "Recovery imaji ayri verilir; ROM paketlenmez."
+}

@@ -1,0 +1,22 @@
+{
+  "name": "OnePlus 8T",
+  "codename": "kebab",
+  "soc": "Snapdragon 865",
+  "arch": "aarch64",
+  "cpu": "cortex-a76",
+  "ram_mb": 8192,
+  "cpu_cores": 8,
+  "screen": {
+    "width": 1080,
+    "height": 2400,
+    "dpi": 402
+  },
+  "recovery": {
+    "codename": "kebab",
+    "projects": [
+      "twrp",
+      "orangefox"
+    ]
+  },
+  "notes": "Recovery imaji ayri verilir; ROM paketlenmez."
+}
