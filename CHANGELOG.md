@@ -1,5 +1,8 @@
 # Changelog
 
+## 0.8.1
+- Fix: update check no longer depends on the GitHub API (anonymous limit is 60/hour per IP, so shared networks got 403 and "offline"); falls back to the public release page
+
 ## 0.8.0
 - **Auto-update:** `odvm` asks to update when a newer GitHub release exists (checked at most every 12 h, terminal only); the executable replaces itself (SHA-256 checked), pip installs upgrade via pip; `odvm update [--check]`; `ODVM_NO_UPDATE_CHECK=1` disables
 - **Fix (Termux/VNC):** the guest's serial console was not connected in VNC mode, so you could not see any boot output; it now prints in the terminal (Ctrl+A X quits)
