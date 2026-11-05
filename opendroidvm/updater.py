@@ -58,8 +58,42 @@ def _save(st):
         pass
 
 
+def web_base():
+    return os.environ.get("ODVM_UPDATE_WEB", f"https://github.com/{REPO}").rstrip("/")
+
+
+class _NoRedirect(urllib.request.HTTPRedirectHandler):
+    def redirect_request(self, *a, **k):
+        return None
+
+
+def _latest_via_web(timeout=4):
+    """Fallback without the API (its anonymous limit is 60/hour per IP, shared on many networks):
+    /releases/latest redirects to /releases/tag/<tag>; asset URLs follow a fixed pattern."""
+    req = urllib.request.Request(web_base() + "/releases/latest",
+                                 headers={"User-Agent": "OpenDroidVM-updater"})
+    try:
+        urllib.request.build_opener(_NoRedirect).open(req, timeout=timeout)
+        return None                         # 200 without a redirect: no release
+    except urllib.error.HTTPError as e:
+        m = re.search(r"/releases/tag/([^/?#]+)", e.headers.get("Location", "") or "")
+        if e.code not in (301, 302, 303, 307, 308) or not m:
+            return None
+        tag = m.group(1)
+    except (urllib.error.URLError, OSError):
+        return None
+    base = f"{web_base()}/releases/download/{tag}/"
+    names = [f"opendroidvm-{tag.lstrip('vV')}-py3-none-any.whl", *EXE_NAMES.values()]
+    return {"tag": tag, "assets": {n: {"url": base + n, "size": 0, "digest": ""} for n in names}}
+
+
 def latest_release(timeout=4):
     """{'tag': 'v0.8.0', 'assets': {name: {'url','size','digest'}}} or None when offline."""
+    info = _latest_via_api(timeout)
+    return info or _latest_via_web(timeout)
+
+
+def _latest_via_api(timeout=4):
     req = urllib.request.Request(api_url(), headers={"User-Agent": "OpenDroidVM-updater",
                                                      "Accept": "application/vnd.github+json"})
     try:
@@ -90,6 +124,8 @@ def _download(url, dest, size_hint=0, digest=""):
             h.update(chunk)
     if size_hint and os.path.getsize(dest) != size_hint:
         raise RuntimeError("size mismatch")
+    if not size_hint and os.path.getsize(dest) < 1_000_000:      # no metadata: basic sanity
+        raise RuntimeError("download too small, refusing to install it")
     if digest.startswith("sha256:") and h.hexdigest() != digest[7:]:
         raise RuntimeError("checksum mismatch")
 

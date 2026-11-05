@@ -26,6 +26,11 @@ class Fake(BaseHTTPRequestHandler):
                 {"name": "odvm-macos", "browser_download_url": base + "/exe", "size": len(EXE), "digest": DIGEST},
                 {"name": "opendroidvm-9.9.9-py3-none-any.whl", "browser_download_url": base + "/whl", "size": 1},
             ]}).encode()
+        elif self.path == "/web/releases/latest":
+            self.send_response(302); self.send_header("Location", "/web/releases/tag/v9.9.9")
+            self.send_header("Content-Length", "0"); self.end_headers(); return
+        elif self.path == "/forbidden":
+            self.send_response(403); self.send_header("Content-Length", "0"); self.end_headers(); return
         elif self.path == "/exe":
             body = EXE
         else:
@@ -52,6 +57,7 @@ def test_latest_release_and_offline(api, monkeypatch):
     info = updater.latest_release()
     assert info["tag"] == "v9.9.9" and "odvm-linux-x64" in info["assets"]
     monkeypatch.setenv("ODVM_UPDATE_API", "http://127.0.0.1:9/none")
+    monkeypatch.setenv("ODVM_UPDATE_WEB", "http://127.0.0.1:9/web")
     assert updater.latest_release(timeout=1) is None          # offline: silent
 
 
@@ -162,3 +168,30 @@ def test_warnings_explain_black_screen(tmp_path, capsys):
     assert "64-bit ARM kernel" in capsys.readouterr().err
     cli._boot_warnings(p64, ["qemu", "-kernel", _kernel(tmp_path / "kok", "arm64")])
     assert capsys.readouterr().err == ""
+
+
+def test_api_rate_limited_falls_back_to_web(api, monkeypatch):
+    port = os.environ["ODVM_UPDATE_API"].split(":")[-1].split("/")[0]
+    monkeypatch.setenv("ODVM_UPDATE_API", f"http://127.0.0.1:{port}/forbidden")     # 403 like a shared IP
+    monkeypatch.setenv("ODVM_UPDATE_WEB", f"http://127.0.0.1:{port}/web")
+    info = updater.latest_release()
+    assert info["tag"] == "v9.9.9"
+    assert info["assets"]["odvm-linux-x64"]["url"].endswith("/web/releases/download/v9.9.9/odvm-linux-x64")
+    assert "opendroidvm-9.9.9-py3-none-any.whl" in info["assets"]
+
+
+def test_web_fallback_offline_and_no_release(monkeypatch):
+    monkeypatch.setenv("ODVM_UPDATE_API", "http://127.0.0.1:9/x")
+    monkeypatch.setenv("ODVM_UPDATE_WEB", "http://127.0.0.1:9/web")
+    assert updater.latest_release(timeout=1) is None
+
+
+def test_tiny_download_without_metadata_is_refused(api, tmp_path, monkeypatch):
+    fake_exe = tmp_path / "odvm"; fake_exe.write_bytes(b"OLD")
+    monkeypatch.setattr(sys, "frozen", True, raising=False)
+    monkeypatch.setattr(sys, "executable", str(fake_exe))
+    monkeypatch.setattr(updater.platform, "system", lambda: "Linux")
+    info = updater.latest_release()
+    a = info["assets"]["odvm-linux-x64"]; a["size"] = 0; a["digest"] = ""        # as in the web fallback
+    ok, msg = updater.apply_update(info)
+    assert not ok and fake_exe.read_bytes() == b"OLD"        # 300 KB < 1 MB -> refused
