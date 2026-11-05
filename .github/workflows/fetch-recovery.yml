@@ -25,6 +25,8 @@ jobs:
             odvm fetch-recovery ${{ inputs.devices }} --out recovery --annotate --check || true
           fi
           du -sh recovery 2>/dev/null || true
+      - name: Inspect image headers
+        run: python tools/inspect_img.py recovery || true
       - uses: actions/upload-artifact@v4
         with:
           name: recovery-images
