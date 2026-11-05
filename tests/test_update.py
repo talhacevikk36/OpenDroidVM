@@ -166,7 +166,10 @@ def test_warnings_explain_black_screen(tmp_path, capsys):
     assert "32-bit ARM kernel" in capsys.readouterr().err
     cli._boot_warnings(p32, ["qemu", "-kernel", _kernel(tmp_path / "k64", "arm64")])
     assert "64-bit ARM kernel" in capsys.readouterr().err
-    cli._boot_warnings(p64, ["qemu", "-kernel", _kernel(tmp_path / "kok", "arm64")])
+    good = tmp_path / "kok"
+    k = bytearray(64); k[56:60] = b"ARMd"
+    good.write_bytes(bytes(k) + b"arm,pl011 virtio_mmio virtio-gpu " * 3)
+    cli._boot_warnings(p64, ["qemu", "-kernel", str(good)])
     assert capsys.readouterr().err == ""
 
 

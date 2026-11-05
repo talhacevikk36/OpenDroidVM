@@ -20,9 +20,9 @@ jobs:
       - name: Download official TWRP images
         run: |
           if [ -z "${{ inputs.devices }}" ]; then
-            odvm fetch-recovery --all --out recovery --annotate || true
+            odvm fetch-recovery --all --out recovery --annotate --check || true
           else
-            odvm fetch-recovery ${{ inputs.devices }} --out recovery --annotate || true
+            odvm fetch-recovery ${{ inputs.devices }} --out recovery --annotate --check || true
           fi
           du -sh recovery 2>/dev/null || true
       - uses: actions/upload-artifact@v4

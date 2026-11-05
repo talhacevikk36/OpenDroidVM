@@ -7,7 +7,7 @@ import sys
 from pathlib import Path
 from dataclasses import asdict
 
-from . import __version__, bootimg, i18n, keys, launcher, panel, profiles, qemu, recovery, ui, updater
+from . import __version__, bootimg, i18n, kernelscan, keys, launcher, panel, profiles, qemu, recovery, ui, updater
 from .i18n import t
 
 
@@ -78,18 +78,62 @@ def _qemu_ready(arch, explicit=None, assume_yes=False):
     return False
 
 
+def print_scan(r):
+    print(t("chk_head", arch=r.arch, comp=r.compression))
+    for key in ("virt_machine", "uart", "virtio_mmio", "virtio_pci", "virtio_gpu", "virtio_input"):
+        if key == "virt_machine" and r.arch != "arm32":
+            continue
+        print(f"  [{'x' if r.found.get(key) else ' '}] {t('chk_item_' + key)}")
+    if r.vendor:
+        print(t("chk_vendor", v=r.vendor))
+    if r.verdict == "no":
+        print(t("chk_v_no", why=t("chk_why_" + r.reason)))
+    elif r.verdict == "unknown":
+        print(t("chk_v_unknown", comp=r.compression))
+    else:
+        print(t("chk_v_" + r.verdict))
+
+
+def _check(a):
+    target = a.target
+    if not os.path.isfile(target):
+        local = recovery.find_local(target)
+        if not local:
+            print(t("chk_usage"), file=sys.stderr)
+            return 1
+        target = str(local)
+    try:
+        r = kernelscan.scan_file(target)
+    except (OSError, bootimg.CorruptImage) as e:
+        print(t("bad_image", x=e), file=sys.stderr)
+        return 1
+    print(target)
+    print_scan(r)
+    return 0 if r.verdict in ("yes", "serial") else 2
+
+
 def _boot_warnings(p, cmd):
     """Explain up front why a VM would stay black."""
     if "-kernel" not in cmd:
         print(t("warn_no_kernel"), file=sys.stderr)
-        return
-    kind = bootimg.kernel_kind(cmd[cmd.index("-kernel") + 1])
+        return None
+    kpath = cmd[cmd.index("-kernel") + 1]
+    kind = bootimg.kernel_kind(kpath)
     if kind == "arm32" and p.arch == "aarch64":
         print(t("warn_k32"), file=sys.stderr)
     elif kind == "arm64" and p.arch == "arm":
         print(t("warn_k64"), file=sys.stderr)
-    elif kind == "unknown":
+    try:
+        r = kernelscan.scan_file(kpath)
+    except OSError:
+        return None
+    if r.verdict == "no":
+        print(t("chk_v_no", why=t("chk_why_" + r.reason)), file=sys.stderr)
+    elif r.verdict == "serial":
+        print(t("chk_v_serial"), file=sys.stderr)
+    elif r.verdict == "unknown" and kind == "unknown":
         print(t("warn_kunk"), file=sys.stderr)
+    return r.verdict
 
 
 def launch(p, o, dry_run=False, assume_yes=False):
@@ -102,7 +146,7 @@ def launch(p, o, dry_run=False, assume_yes=False):
         print(t("bad_image", x=e), file=sys.stderr)
         return 1
     print(launcher.fmt(cmd))
-    _boot_warnings(p, cmd)
+    verdict = _boot_warnings(p, cmd)
     vnc, reason = launcher.effective_vnc(o)
     if reason:
         print(t("termux_vnc" if reason == "termux" else "nodisplay_vnc", port=5900 + vnc),
@@ -111,6 +155,9 @@ def launch(p, o, dry_run=False, assume_yes=False):
         print(t("display_hint"), file=sys.stderr)
     if dry_run:
         return 0
+    if verdict == "no" and not assume_yes and sys.stdin.isatty() \
+            and not ui.yes(t("ask_anyway"), default=False):
+        return 1
     if not _qemu_ready(p.arch, o.qemu_path or None, assume_yes):
         return 1
     cmd = launcher.build(p, o)          # path may have changed after installing QEMU
@@ -310,7 +357,16 @@ def _fetch(a):
             ok += 1
             mb = round(os.path.getsize(good) / 1048576, 1)
             print(t("fetch_ok", id=pid, path=good, mb=mb))
-            lines.append(f"{pid} OK {good.name} {mb}MB")
+            extra = ""
+            if a.check or a.annotate:
+                try:
+                    r = kernelscan.scan_file(good)
+                    extra = f" | boot={r.verdict}:{r.reason or '-'} arch={r.arch} soc={r.vendor or '-'}"
+                    if a.check:
+                        print_scan(r)
+                except (OSError, bootimg.CorruptImage) as e:
+                    extra = f" | boot=error:{e}"
+            lines.append(f"{pid} OK {good.name} {mb}MB{extra}")
         else:
             print(t("fetch_fail", id=pid, why=why), file=sys.stderr)
             lines.append(f"{pid} FAIL {why}")
@@ -400,6 +456,9 @@ def main(argv=None):
     s.add_argument("--check", action="store_true", help="only report")
     s.add_argument("--yes", "-y", action="store_true", help=t("h_yes"))
     s.set_defaults(f=_update)
+    s = sp.add_parser("check", help=t("h_check"))
+    s.add_argument("target", help="image file or device id")
+    s.set_defaults(f=_check)
     sp.add_parser("wizard", help=t("h_wizard")).set_defaults(f=_wizard)
 
     s = sp.add_parser("extract", help=t("h_extract"))
@@ -436,6 +495,7 @@ def main(argv=None):
     s.add_argument("--all", action="store_true", help=t("h_fetch_all"))
     s.add_argument("--out", default="recovery", help=t("h_fetch_out"))
     s.add_argument("--version", help="e.g. 3.7.0")
+    s.add_argument("--check", action="store_true", help="also check whether each kernel can boot on QEMU")
     s.add_argument("--annotate", action="store_true", help=argparse.SUPPRESS)
     s.set_defaults(f=_fetch)
     sp.add_parser("validate", help=t("h_validate")).set_defaults(f=_validate)
