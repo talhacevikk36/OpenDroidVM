@@ -6,6 +6,15 @@ Try Android recoveries (TWRP, OrangeFox, ...) and ROMs on QEMU using device prof
 
 How it works under the hood: [docs/how-it-works.md](docs/how-it-works.md)
 
+## Quick start (easiest)
+
+```
+odvm                      # guided: pick your phone, TWRP is downloaded for you, then it starts
+odvm start s10 --yes      # one command: installs QEMU if missing, downloads TWRP, starts the phone
+```
+
+Windows: just double-click `odvm-windows-x64.exe` from the releases page and follow the questions. Mistyped a name? You get suggestions ("Did you mean: pixel3?").
+
 ## Install
 
 ```

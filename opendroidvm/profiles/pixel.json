@@ -10,5 +10,15 @@
     "height": 1920,
     "dpi": 441
   },
-  "notes": "Best fit for generic AOSP/GSI images."
+  "notes": "Best fit for generic AOSP/GSI images.",
+  "recovery": {
+    "projects": [
+      "twrp",
+      "orangefox"
+    ],
+    "codename": "sailfish",
+    "alt": [
+      "marlin"
+    ]
+  }
 }

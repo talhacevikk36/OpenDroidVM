@@ -16,6 +16,9 @@
     "projects": [
       "twrp",
       "orangefox"
+    ],
+    "alt": [
+      "jasmine_sprout"
     ]
   },
   "notes": "Recovery image is supplied separately; no ROM is bundled."

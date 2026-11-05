@@ -1,4 +1,5 @@
 """Device profiles (opendroidvm/profiles/*.json)."""
+import difflib
 import json
 import os
 import re
@@ -81,3 +82,23 @@ def find(pid, directory=None):
         if p.codename and p.codename.lower() == pid:
             return p
     return None
+
+
+def suggest(pid, n=3):
+    """Closest profile ids to a mistyped name (for 'did you mean')."""
+    items = load_all()
+    names = {}
+    for p in items:
+        for key in (p.id, p.codename, p.name):
+            if key:
+                names[key.lower()] = p.id
+    hits = difflib.get_close_matches((pid or "").lower(), list(names), n=n * 3, cutoff=0.6)
+    out = []
+    for h in hits:
+        if names[h] not in out:
+            out.append(names[h])
+    sub = [p.id for p in items if (pid or "").lower() in (p.id + p.codename + p.name).lower()]
+    for i in sub:
+        if i not in out:
+            out.append(i)
+    return out[:n]

@@ -4,9 +4,10 @@ import os
 import platform
 import subprocess
 import sys
+from pathlib import Path
 from dataclasses import asdict
 
-from . import __version__, bootimg, i18n, keys, launcher, panel, profiles, qemu, recovery
+from . import __version__, bootimg, i18n, keys, launcher, panel, profiles, qemu, recovery, ui
 from .i18n import t
 
 
@@ -30,10 +31,17 @@ def _list(a):
     return 0
 
 
+def _not_found(pid):
+    print(t("profile_not_found", x=pid), file=sys.stderr)
+    near = profiles.suggest(pid)
+    if near:
+        print(t("did_you_mean", x=", ".join(near)), file=sys.stderr)
+
+
 def _info(a):
     p = profiles.find(a.device)
     if not p:
-        print(t("profile_not_found", x=a.device), file=sys.stderr)
+        _not_found(a.device)
         return 1
     for k, v in vars(p).items():
         print(f"{k}: {v}")
@@ -56,10 +64,46 @@ def _resolve_ports(o):
     return True
 
 
+def _qemu_ready(arch, explicit=None, assume_yes=False):
+    """True if QEMU exists; otherwise offer to install it (asks unless assume_yes)."""
+    if qemu.find_qemu(arch, explicit):
+        return True
+    if assume_yes or (sys.stdin.isatty() and ui.yes(t("ask_install"))):
+        qemu.install()
+        if qemu.find_qemu(arch, explicit):
+            return True
+        print(t("install_failed"), file=sys.stderr)
+    else:
+        print(t("qemu_missing"), file=sys.stderr)
+    return False
+
+
+def launch(p, o, dry_run=False, assume_yes=False):
+    """Resolve ports, build the QEMU command, print it and (unless dry_run) run it."""
+    if not dry_run and not _resolve_ports(o):
+        return 1
+    try:
+        cmd = launcher.build(p, o)
+    except bootimg.CorruptImage as e:
+        print(t("bad_image", x=e), file=sys.stderr)
+        return 1
+    print(launcher.fmt(cmd))
+    vnc, reason = launcher.effective_vnc(o)
+    if reason:
+        print(t("termux_vnc" if reason == "termux" else "nodisplay_vnc", port=5900 + vnc),
+              file=sys.stderr)
+    if dry_run:
+        return 0
+    if not _qemu_ready(p.arch, o.qemu_path or None, assume_yes):
+        return 1
+    cmd = launcher.build(p, o)          # path may have changed after installing QEMU
+    return subprocess.call(cmd)
+
+
 def _run(a):
     p = profiles.find(a.device)
     if not p:
-        print(t("profile_not_found", x=a.device), file=sys.stderr)
+        _not_found(a.device)
         return 1
     if a.recovery == "auto":
         a.recovery = recovery.find_local(p.id)
@@ -76,24 +120,45 @@ def _run(a):
                          qemu_path=a.qemu or "", headless=a.headless,
                          ram=a.ram, cores=a.cores, adb_port=a.adb_port,
                          vnc=a.vnc, snapshot=a.snapshot, monitor_port=a.monitor_port)
-    if not a.dry_run and not _resolve_ports(o):
+    return launch(p, o, a.dry_run)
+
+
+def progress_bar():
+    """Progress callback for downloads; silent when output is not a terminal."""
+    if not sys.stderr.isatty():
+        return None
+    state = {"last": -1}
+
+    def cb(name, done, total):
+        pct = int(done * 100 / total) if total else 0
+        if pct != state["last"]:
+            state["last"] = pct
+            sys.stderr.write("\r" + t("dl_progress", name=name, pct=pct,
+                                      done=round(done / 1048576, 1),
+                                      total=round(total / 1048576, 1) if total else "?"))
+            sys.stderr.flush()
+    return cb
+
+
+def _start(a):
+    """One command: QEMU if needed -> TWRP if needed -> run."""
+    p = profiles.find(a.device)
+    if not p:
+        _not_found(a.device)
         return 1
-    try:
-        cmd = launcher.build(p, o)
-    except bootimg.CorruptImage as e:
-        print(t("bad_image", x=e), file=sys.stderr)
+    if not a.dry_run and not _qemu_ready(p.arch, None, a.yes):
+        print(t("start_need_qemu"), file=sys.stderr)
         return 1
-    print(launcher.fmt(cmd))
-    vnc, reason = launcher.effective_vnc(o)
-    if reason:
-        print(t("termux_vnc" if reason == "termux" else "nodisplay_vnc", port=5900 + vnc),
-              file=sys.stderr)
-    if a.dry_run:
-        return 0
-    if not qemu.find_qemu(p.arch, a.qemu):
-        print(t("qemu_missing"), file=sys.stderr)
-        return 1
-    return subprocess.call(cmd)
+    img = a.recovery or recovery.find_local(p.id)
+    if not img:
+        try:
+            img = recovery.fetch_profile(p, "recovery", a.version, progress_bar())
+            sys.stderr.write("\n") if sys.stderr.isatty() else None
+        except recovery.FetchError as e:
+            print(t("fetch_fail", id=p.id, why=e), file=sys.stderr)
+            return 1
+    o = launcher.Options(mode=a.mode, recovery=str(img))
+    return launch(p, o, a.dry_run, a.yes)
 
 
 def _extract(a):
@@ -211,28 +276,46 @@ def _fetch(a):
     if not ids:
         print(t("fetch_none"), file=sys.stderr)
         return 1
-    ok = 0
+    ok, lines = 0, []
     for pid in ids:
         p = profiles.find(pid)
+        good, why = None, ""
         if not p:
-            why, good = t("profile_not_found", x=pid), None
+            why = t("profile_not_found", x=pid)
         else:
             try:
-                good = recovery.fetch_profile(p, a.out, a.version)
+                good = recovery.fetch_profile(p, a.out, a.version, progress_bar())
+                if sys.stderr.isatty():
+                    sys.stderr.write("\n")
             except recovery.FetchError as e:
-                why, good = str(e), None
+                why = str(e)
         if good:
             ok += 1
             mb = round(os.path.getsize(good) / 1048576, 1)
             print(t("fetch_ok", id=pid, path=good, mb=mb))
-            if a.annotate:
-                print(f"::notice::{pid} OK {good.name} {mb}MB")
+            lines.append(f"{pid} OK {good.name} {mb}MB")
         else:
             print(t("fetch_fail", id=pid, why=why), file=sys.stderr)
-            if a.annotate:
-                print(f"::warning::{pid} FAIL {why}")
+            lines.append(f"{pid} FAIL {why}")
+            if not p:
+                near = profiles.suggest(pid)
+                if near:
+                    print(t("did_you_mean", x=", ".join(near)), file=sys.stderr)
     print(t("fetch_summary", ok=ok, n=len(ids), out=a.out))
+    if a.annotate:   # GitHub limits annotations per step, so send ONE line + a summary file
+        print("::notice::" + " | ".join(lines)[:3500])
+        Path(a.out).mkdir(parents=True, exist_ok=True)
+        (Path(a.out) / "REPORT.txt").write_text("\n".join(lines) + "\n", encoding="utf-8")
+        summary = os.environ.get("GITHUB_STEP_SUMMARY")
+        if summary:
+            with open(summary, "a", encoding="utf-8") as f:
+                f.write("### fetch-recovery\n" + "\n".join("- " + x for x in lines) + "\n")
     return 0 if ok else 1
+
+
+def _wizard(a=None):
+    from . import wizard
+    return wizard.run()
 
 
 def _install(a):
@@ -254,7 +337,7 @@ def main(argv=None):
     ap = argparse.ArgumentParser(prog="odvm", description="OpenDroidVM")
     ap.add_argument("--version", action="version", version=__version__)
     ap.add_argument("--lang", choices=sorted(i18n.M), help=t("h_lang"))
-    sp = ap.add_subparsers(dest="cmd", required=True)
+    sp = ap.add_subparsers(dest="cmd")
 
     s = sp.add_parser("list", help=t("h_list"))
     s.add_argument("query", nargs="?")
@@ -282,6 +365,16 @@ def main(argv=None):
     s.add_argument("--headless", action="store_true")
     s.add_argument("--dry-run", action="store_true")
     s.set_defaults(f=_run)
+
+    s = sp.add_parser("start", help=t("h_start"))
+    s.add_argument("device")
+    s.add_argument("--mode", choices=["accurate", "fast"], default="fast")
+    s.add_argument("--recovery", help="use this image instead of the downloaded TWRP")
+    s.add_argument("--version", help="TWRP version, e.g. 3.7.0")
+    s.add_argument("--yes", "-y", action="store_true", help=t("h_yes"))
+    s.add_argument("--dry-run", action="store_true")
+    s.set_defaults(f=_start)
+    sp.add_parser("wizard", help=t("h_wizard")).set_defaults(f=_wizard)
 
     s = sp.add_parser("extract", help=t("h_extract"))
     s.add_argument("image"); s.add_argument("--out", default="extracted")
@@ -325,6 +418,11 @@ def main(argv=None):
     s.set_defaults(f=_install)
 
     a = ap.parse_args(argv)
+    if not a.cmd:                       # plain `odvm`: guided start in a terminal, else help
+        if sys.stdin.isatty():
+            return _wizard()
+        ap.print_help()
+        return 0
     return a.f(a)
 
 
