@@ -6,6 +6,8 @@ Try Android recoveries (TWRP, OrangeFox, ...) and ROMs on QEMU using device prof
 
 How it works under the hood: [docs/how-it-works.md](docs/how-it-works.md)
 
+`odvm` is short for **O**pen**D**roid**VM**; the long name `opendroidvm` works too.
+
 ## Quick start (easiest)
 
 ```
@@ -93,6 +95,20 @@ What a key does inside Android depends on the image's key layout (e.g. in a reco
 ## Language
 
 The CLI speaks English and Turkish: `odvm --lang tr list` or `ODVM_LANG=tr`. If unset, the system locale decides (Turkish locale → Turkish, otherwise English).
+
+## Updates
+
+`odvm` checks GitHub for a new release when you start it (at most every 12 hours, only in a terminal, silent when offline) and asks: "A new version is available ... Update now? [Y/n]". The `.exe`/binary replaces itself, the pip install upgrades itself. Manual: `odvm update` (`--check` only looks). Turn it off: `ODVM_NO_UPDATE_CHECK=1`.
+
+## Troubleshooting: "Display output is not active" (VNC / Termux)
+
+That message means the **guest kernel has not started a display driver yet**; VNC itself works. Typical reasons:
+
+1. **No kernel was given** (no `--recovery`/`--boot`): nothing boots. odvm now warns about this.
+2. **A device kernel (TWRP's) was given**: it is built for the real SoC and usually has no `virtio-gpu` driver for QEMU's `virt` machine, so the screen can stay blank even though it runs. This is the main limit of the whole idea (see Limits).
+3. **Wrong architecture** (32-bit kernel on a 64-bit profile or the reverse): odvm warns and tells you which kind of profile to pick.
+
+The boot log goes to the terminal you started odvm in (serial console), so you can see whether the kernel boots at all. Quit QEMU with Ctrl+A then X.
 
 ## Limits
 

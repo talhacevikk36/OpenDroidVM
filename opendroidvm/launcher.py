@@ -82,9 +82,9 @@ def build(profile, o, workdir=None):
         cmd += ["-snapshot"]
     vnc, _ = effective_vnc(o)
     if vnc >= 0:
-        cmd += ["-display", f"vnc=:{vnc}"]
+        cmd += ["-display", f"vnc=:{vnc}", "-serial", "mon:stdio"]  # boot log in the terminal
     elif o.headless:
-        cmd += ["-display", "none", "-serial", "stdio"]
+        cmd += ["-display", "none", "-serial", "mon:stdio"]
     return cmd
 
 
