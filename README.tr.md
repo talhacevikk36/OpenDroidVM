@@ -4,6 +4,8 @@
 
 Android cihaz profilleriyle QEMU uzerinde recovery (TWRP, OrangeFox vb.) ve ROM denemek icin arac. 70 cihaz profili icerir. Profil arama sitesi: https://talhacevikk36.github.io/OpenDroidVM/
 
+`odvm`, **O**pen**D**roid**VM**'in kisaltmasidir; uzun hali `opendroidvm` de calisir.
+
 ## Hizli baslangic (en kolayi)
 
 ```
@@ -91,6 +93,20 @@ Tuslarin Android'de ne yaptigi imajin tus haritasina baglidir (ornegin recovery'
 ## Dil
 
 Arayuz Ingilizce ve Turkce destekler: `odvm --lang tr list` ya da `ODVM_LANG=tr`. Ayarlanmazsa sistem diline bakilir (Turkce degilse Ingilizce).
+
+## Guncelleme
+
+`odvm` acilirken GitHub'da yeni surum var mi bakar (en fazla 12 saatte bir, sadece terminalde, internet yoksa sessiz) ve sorar: "Yeni surum var ... Simdi guncellensin mi? [E/h]". `.exe`/binary kendini degistirir, pip kurulumu kendini yukseltir. Elle: `odvm update` (`--check` sadece bakar). Kapatmak icin: `ODVM_NO_UPDATE_CHECK=1`.
+
+## Sorun giderme: "Display output is not active" (VNC / Termux)
+
+Bu yazi **misafir kernel'in henuz bir ekran suruculusu baslatmadigi** anlamina gelir; VNC'nin kendisi calisiyordur. Tipik nedenler:
+
+1. **Kernel verilmedi** (`--recovery`/`--boot` yok): hicbir sey acilmaz. odvm artik bunu uyarir.
+2. **Cihaz kernel'i (TWRP) verildi**: gercek SoC icin derlenmistir, QEMU'nun `virt` makinesi icin `virtio-gpu` suruculusu genelde yoktur; calissa bile ekran bos kalabilir. Fikrin ana siniri budur (Sinirlar bolumune bak).
+3. **Yanlis mimari** (64-bit profile 32-bit kernel ya da tersi): odvm uyarir ve hangi tur profil sececegini soyler.
+
+Acilis kaydi odvm'yi baslattigin terminale yazilir (seri konsol), boylece kernel'in hic acilip acilmadigini gorursun. QEMU'dan cikis: Ctrl+A sonra X.
 
 ## Sinirlar
 

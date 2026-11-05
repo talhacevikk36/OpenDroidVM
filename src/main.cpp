@@ -11,7 +11,7 @@ using namespace odw;
 
 static void usage() {
     std::cout <<
-R"(OpenDroidWm 0.1.0 - try Android ROMs/recoveries using device profiles
+R"(OpenDroidVM (C++) 0.1.0 - try Android ROMs/recoveries using device profiles
 
 Usage:
   opendroidwm list

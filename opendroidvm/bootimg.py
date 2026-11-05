@@ -66,3 +66,17 @@ def cache_dir(img_path):
                        .encode()).hexdigest()[:16]
     base = os.environ.get("XDG_CACHE_HOME") or os.path.join(os.path.expanduser("~"), ".cache")
     return Path(base) / "opendroidvm" / key
+
+
+def kernel_kind(path):
+    """'arm64' | 'arm32' | 'unknown' from the kernel header (Image / zImage magic)."""
+    try:
+        with open(path, "rb") as f:
+            head = f.read(64)
+    except OSError:
+        return "unknown"
+    if len(head) >= 60 and head[56:60] == b"ARMd":
+        return "arm64"
+    if len(head) >= 40 and struct.unpack_from("<I", head, 36)[0] == 0x016F2818:
+        return "arm32"
+    return "unknown"

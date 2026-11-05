@@ -7,7 +7,7 @@ import sys
 from pathlib import Path
 from dataclasses import asdict
 
-from . import __version__, bootimg, i18n, keys, launcher, panel, profiles, qemu, recovery, ui
+from . import __version__, bootimg, i18n, keys, launcher, panel, profiles, qemu, recovery, ui, updater
 from .i18n import t
 
 
@@ -78,6 +78,20 @@ def _qemu_ready(arch, explicit=None, assume_yes=False):
     return False
 
 
+def _boot_warnings(p, cmd):
+    """Explain up front why a VM would stay black."""
+    if "-kernel" not in cmd:
+        print(t("warn_no_kernel"), file=sys.stderr)
+        return
+    kind = bootimg.kernel_kind(cmd[cmd.index("-kernel") + 1])
+    if kind == "arm32" and p.arch == "aarch64":
+        print(t("warn_k32"), file=sys.stderr)
+    elif kind == "arm64" and p.arch == "arm":
+        print(t("warn_k64"), file=sys.stderr)
+    elif kind == "unknown":
+        print(t("warn_kunk"), file=sys.stderr)
+
+
 def launch(p, o, dry_run=False, assume_yes=False):
     """Resolve ports, build the QEMU command, print it and (unless dry_run) run it."""
     if not dry_run and not _resolve_ports(o):
@@ -88,10 +102,13 @@ def launch(p, o, dry_run=False, assume_yes=False):
         print(t("bad_image", x=e), file=sys.stderr)
         return 1
     print(launcher.fmt(cmd))
+    _boot_warnings(p, cmd)
     vnc, reason = launcher.effective_vnc(o)
     if reason:
         print(t("termux_vnc" if reason == "termux" else "nodisplay_vnc", port=5900 + vnc),
               file=sys.stderr)
+    if vnc >= 0 and not dry_run:
+        print(t("display_hint"), file=sys.stderr)
     if dry_run:
         return 0
     if not _qemu_ready(p.arch, o.qemu_path or None, assume_yes):
@@ -318,6 +335,11 @@ def _wizard(a=None):
     return wizard.run()
 
 
+def _update(a):
+    updater.check_and_offer(force=True, assume_yes=a.yes, only_check=a.check)
+    return 0
+
+
 def _install(a):
     return qemu.install(a.dry_run)
 
@@ -374,6 +396,10 @@ def main(argv=None):
     s.add_argument("--yes", "-y", action="store_true", help=t("h_yes"))
     s.add_argument("--dry-run", action="store_true")
     s.set_defaults(f=_start)
+    s = sp.add_parser("update", help=t("h_update"))
+    s.add_argument("--check", action="store_true", help="only report")
+    s.add_argument("--yes", "-y", action="store_true", help=t("h_yes"))
+    s.set_defaults(f=_update)
     sp.add_parser("wizard", help=t("h_wizard")).set_defaults(f=_wizard)
 
     s = sp.add_parser("extract", help=t("h_extract"))
@@ -418,6 +444,9 @@ def main(argv=None):
     s.set_defaults(f=_install)
 
     a = ap.parse_args(argv)
+    updater.cleanup_old()
+    if a.cmd not in ("update", "key") and updater.check_and_offer():
+        return 0                        # updated: ask the user to start odvm again
     if not a.cmd:                       # plain `odvm`: guided start in a terminal, else help
         if sys.stdin.isatty():
             return _wizard()

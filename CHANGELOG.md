@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.8.0
+- **Auto-update:** `odvm` asks to update when a newer GitHub release exists (checked at most every 12 h, terminal only); the executable replaces itself (SHA-256 checked), pip installs upgrade via pip; `odvm update [--check]`; `ODVM_NO_UPDATE_CHECK=1` disables
+- **Fix (Termux/VNC):** the guest's serial console was not connected in VNC mode, so you could not see any boot output; it now prints in the terminal (Ctrl+A X quits)
+- Warns when no kernel is given, or when the kernel architecture does not match the profile; explains "Display output is not active"
+- C++ project named OpenDroidVM (was a typo, OpenDroidWm)
+
 ## 0.7.5 - easier to use
 - Plain `odvm` (or double-click the .exe) starts a guided wizard: pick the phone, download TWRP, choose speed, start
 - `odvm start <device> --yes`: one command does everything (QEMU install, TWRP download, launch)
