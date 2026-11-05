@@ -61,7 +61,7 @@ def list_files(codename):
     return names
 
 
-def download(codename, dest_dir, version=None):
+def download(codename, dest_dir, version=None, progress=None):
     """Download the newest (or `version`-matching) image; returns the .img path."""
     names = list_files(codename)
     if version:
@@ -75,15 +75,21 @@ def download(codename, dest_dir, version=None):
     part = dest / (name + ".part")
     try:
         with _open(url, referer=url + ".html") as r, open(part, "wb") as f:
+            total = int(r.headers.get("Content-Length") or 0)
+            done = 0
             first = r.read(4096)
             if first[:15].lower().startswith((b"<!doctype html", b"<html")):
                 raise FetchError(t("fetch_html"))
             f.write(first)
+            done = len(first)
             while True:
-                chunk = r.read(1 << 20)
+                chunk = r.read(1 << 18)
                 if not chunk:
                     break
                 f.write(chunk)
+                done += len(chunk)
+                if progress:
+                    progress(name, done, total)
     except (urllib.error.URLError, OSError) as e:
         part.unlink(missing_ok=True)
         raise FetchError(t("fetch_net", e=e))
@@ -113,9 +119,25 @@ def _untar(tar_path, dest):
     return tar_path
 
 
-def fetch_profile(profile, out="recovery", version=None):
-    codename = (profile.recovery or {}).get("codename") or profile.codename or profile.id
-    return download(codename, Path(out) / profile.id, version)
+def candidates(profile):
+    rc = profile.recovery or {}
+    first = rc.get("codename") or profile.codename or profile.id
+    out = []
+    for c in [first, *rc.get("alt", [])]:
+        if c and c not in out:
+            out.append(c)
+    return out
+
+
+def fetch_profile(profile, out="recovery", version=None, progress=None):
+    """Try the profile's TWRP codename, then its alternates (e.g. jasmine -> jasmine_sprout)."""
+    err = None
+    for cn in candidates(profile):
+        try:
+            return download(cn, Path(out) / profile.id, version, progress)
+        except FetchError as e:
+            err = e
+    raise err
 
 
 def find_local(profile_id, out="recovery"):

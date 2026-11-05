@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.7.5 - easier to use
+- Plain `odvm` (or double-click the .exe) starts a guided wizard: pick the phone, download TWRP, choose speed, start
+- `odvm start <device> --yes`: one command does everything (QEMU install, TWRP download, launch)
+- "Did you mean ...?" suggestions for mistyped device names
+- Download progress bar; asks to install QEMU when it is missing
+- TWRP lookup tries alternate codenames (Pixel -> sailfish, Mi A2 -> jasmine_sprout, Note 4 -> trltexx)
+- `fetch-recovery` Action reports every device in one summary (GitHub cut annotations to 10) and writes REPORT.txt
+- CI: macOS runs one Python version (macOS runners were queued for 15+ minutes); `exe` workflow can attach to an existing release by tag
+
 ## 0.7.0
 - `odvm fetch-recovery`: downloads official TWRP images into `recovery/` (20 recommended devices with `--all`); `odvm run --recovery auto`
 - 19 new device profiles (70 total): Pixel 3a/4/4 XL/6a, Note 9/10, S20 FE, S21, A71, M31, OnePlus 9/Nord, Redmi Note 8 Pro, Poco F3, Mi 11, Xperia 1, Nothing Phone (1), Fairphone 3/4

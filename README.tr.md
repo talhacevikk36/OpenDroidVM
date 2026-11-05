@@ -4,6 +4,15 @@
 
 Android cihaz profilleriyle QEMU uzerinde recovery (TWRP, OrangeFox vb.) ve ROM denemek icin arac. 70 cihaz profili icerir. Profil arama sitesi: https://talhacevikk36.github.io/OpenDroidVM/
 
+## Hizli baslangic (en kolayi)
+
+```
+odvm                      # adim adim: telefonu sec, TWRP otomatik indirilir, sonra baslar
+odvm start s10 --yes      # tek komut: QEMU yoksa kurar, TWRP'yi indirir, telefonu baslatir
+```
+
+Windows: surumler sayfasindan `odvm-windows-x64.exe`'ye cift tikla ve sorulari cevapla. Ismi yanlis yazarsan oneri alirsin ("Bunu mu demek istedin: pixel3?").
+
 ## Kurulum
 
 ```
