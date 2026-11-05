@@ -139,7 +139,7 @@ M = {
   "wiz_none": "'{q}' icin sonuc yok. Baska bir kelime dene.",
   "wiz_pick": "Bir numara sec (0 = tekrar ara): ",
   "wiz_rec": "Recovery imaji:",
-  "wiz_rec_dl": "Bu telefon icin resmi TWRP'yi indir (onerilen)",
+  "wiz_rec_dl": "Bu telefon icin resmi TWRP'yi indir (bence yap)",
   "wiz_rec_have": "Daha once indirileni kullan: {x}",
   "wiz_rec_file": "Kendi dosyami kullanacagim",
   "wiz_rec_skip": "Recovery olmadan baslat",
