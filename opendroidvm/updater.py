@@ -13,7 +13,6 @@ import sys
 import time
 import urllib.error
 import urllib.request
-from pathlib import Path
 
 from . import __version__, ui
 from .i18n import t
@@ -38,8 +37,8 @@ def is_newer(tag, current=None):
 
 
 def _state_file():
-    base = os.environ.get("XDG_CACHE_HOME") or os.path.join(os.path.expanduser("~"), ".cache")
-    return Path(base) / "opendroidvm" / "update.json"
+    from . import paths
+    return paths.cache_root() / "update.json"
 
 
 def _load():
@@ -191,7 +190,8 @@ def offer(info, assume_yes=False):
 
 def check_and_offer(force=False, assume_yes=False, only_check=False):
     """Startup hook. Returns True if an update was installed."""
-    if not force and (os.environ.get("ODVM_NO_UPDATE_CHECK")
+    from . import config
+    if not force and (os.environ.get("ODVM_NO_UPDATE_CHECK") or config.get("update_check") is False
                       or not (sys.stdin.isatty() and sys.stdout.isatty())):
         return False
     st, now = _load(), time.time()

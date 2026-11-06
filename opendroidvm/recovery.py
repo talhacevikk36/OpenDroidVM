@@ -129,18 +129,28 @@ def candidates(profile):
     return out
 
 
-def fetch_profile(profile, out="recovery", version=None, progress=None):
+def fetch_profile(profile, out=None, version=None, progress=None):
     """Try the profile's TWRP codename, then its alternates (e.g. jasmine -> jasmine_sprout)."""
     err = None
     for cn in candidates(profile):
         try:
-            return download(cn, Path(out) / profile.id, version, progress)
+            return download(cn, Path(out or default_dir()) / profile.id, version, progress)
         except FetchError as e:
             err = e
     raise err
 
 
-def find_local(profile_id, out="recovery"):
-    d = Path(out) / profile_id
+def default_dir():
+    """./recovery if it exists (old behaviour), else the per-user data folder."""
+    if os.environ.get("ODVM_RECOVERY_DIR"):
+        return Path(os.environ["ODVM_RECOVERY_DIR"])
+    if Path("recovery").is_dir():
+        return Path("recovery")
+    from . import paths
+    return paths.data_root() / "recovery"
+
+
+def find_local(profile_id, out=None):
+    d = Path(out or default_dir()) / profile_id
     imgs = sorted(d.glob("*.img"), key=lambda p: p.stat().st_mtime) if d.is_dir() else []
     return imgs[-1] if imgs else None

@@ -61,7 +61,7 @@ def _choose_recovery(p):
             return None
         return path
     try:
-        img = recovery.fetch_profile(p, "recovery", None, cli.progress_bar())
+        img = recovery.fetch_profile(p, None, None, cli.progress_bar())
         if sys.stderr.isatty():
             sys.stderr.write("\n")
         return str(img)
@@ -85,6 +85,8 @@ def run():
     try:
         print(t("wiz_title"))
         p = _choose_device()
+        if not recovery.find_local(p.id) and not cli._compat_ok(p, False, interactive=True):
+            return 0
         img = None
         while img is None:
             img = _choose_recovery(p)

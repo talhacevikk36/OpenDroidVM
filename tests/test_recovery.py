@@ -122,7 +122,7 @@ def test_start_downloads_then_runs(server, tmp_path, monkeypatch):
     monkeypatch.setattr(cli.subprocess, "call", lambda cmd: called.setdefault("cmd", cmd) and 0)
     monkeypatch.setattr(cli.qemu, "find_qemu", lambda arch, explicit=None: "/usr/bin/qemu-fake")
     assert cli.main(["start", "s7", "--yes"]) == 0
-    assert "-kernel" in called["cmd"] and (tmp_path / "recovery" / "s7").is_dir()
+    assert "-kernel" in called["cmd"] and (recovery.default_dir() / "s7").is_dir()
     assert cli.main(["start", "s9", "--yes"]) == 1            # no page on the fake server
 
 

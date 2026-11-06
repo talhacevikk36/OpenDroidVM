@@ -6,10 +6,13 @@ virtio drivers (disk/display). We look for those drivers' names inside the kerne
 image (decompressing gzip/xz/bzip2 payloads), so the answer is based on evidence.
 """
 import bz2
+import hashlib
+import json
 import lzma
+import os
 import struct
 import zlib
-from dataclasses import dataclass, field
+from dataclasses import asdict, dataclass, field
 
 from . import bootimg
 
@@ -28,6 +31,62 @@ MARKERS = {
 VENDORS = [("Qualcomm", b"qcom,"), ("Samsung Exynos", b"samsung,exynos"),
            ("MediaTek", b"mediatek,"), ("HiSilicon Kirin", b"hisilicon,"),
            ("Rockchip", b"rockchip,"), ("NVIDIA Tegra", b"nvidia,tegra")]
+
+
+SCAN_VERSION = 2
+LZ4_LEGACY = b"\x02\x21\x4c\x18"
+
+
+def _lz4_block(src, limit):
+    out = bytearray()
+    i, n = 0, len(src)
+    while i < n:
+        token = src[i]; i += 1
+        lit = token >> 4
+        if lit == 15:
+            while True:
+                b = src[i]; i += 1; lit += b
+                if b != 255:
+                    break
+        out += src[i:i + lit]; i += lit
+        if i >= n:
+            break
+        off = src[i] | (src[i + 1] << 8); i += 2
+        ml = token & 15
+        if ml == 15:
+            while True:
+                b = src[i]; i += 1; ml += b
+                if b != 255:
+                    break
+        ml += 4
+        if off == 0 or off > len(out):
+            raise ValueError("bad lz4 offset")
+        start = len(out) - off
+        if off >= ml:
+            out += out[start:start + ml]
+        else:
+            out += (bytes(out[start:]) * (ml // off + 1))[:ml]
+        if len(out) > limit:
+            raise ValueError("lz4 too large")
+    return bytes(out)
+
+
+def lz4_legacy(data, limit=MAX_OUT):
+    """Decode the 'legacy' LZ4 container used for Android kernels (Image.lz4). Partial on error."""
+    out = bytearray()
+    i = 4 if data[:4] == LZ4_LEGACY else 0
+    try:
+        while i + 4 <= len(data) and len(out) < limit:
+            n = int.from_bytes(data[i:i + 4], "little"); i += 4
+            if data[i - 4:i] == LZ4_LEGACY:
+                continue
+            if n == 0 or n > len(data) - i or n > 16 * 1024 * 1024:
+                break
+            out += _lz4_block(data[i:i + n], limit)
+            i += n
+    except (ValueError, IndexError):
+        pass
+    return bytes(out)
 
 
 @dataclass
@@ -52,6 +111,16 @@ def _blobs(data):
     """The kernel bytes plus every decompressible payload found inside them."""
     yield data, "none"
     probes = [(b"\x1f\x8b\x08", "gzip"), (b"\xfd7zXZ\x00", "xz"), (b"BZh", "bzip2")]
+    pos = 0
+    for _ in range(3):                      # LZ4 legacy (Pixel kernels): at the start or later
+        pos = data.find(LZ4_LEGACY, pos)
+        if pos < 0:
+            break
+        out = lz4_legacy(data[pos:])
+        if len(out) >= MIN_BLOB:
+            yield out, "lz4"
+            break
+        pos += 1
     for magic, name in probes:
         pos, tries = 0, 0
         while tries < 6:
@@ -94,9 +163,8 @@ def scan_bytes(kernel):
             vendor_hits[name] = vendor_hits.get(name, 0) + blob.count(w)
     best = max(vendor_hits.items(), key=lambda kv: kv[1], default=("", 0))
     r.vendor = best[0] if best[1] >= 5 else ""
-    if kernel[:4] == b"\x02\x21\x4c\x18" or (not seen_blob and not any(r.found.values())
-                                             and r.arch == "unknown"):
-        r.compression = "lz4?" if kernel[:4] == b"\x02\x21\x4c\x18" else r.compression
+    if not seen_blob and not any(r.found.values()) and r.arch == "unknown":
+        r.compression = "lz4?" if kernel[:4] == LZ4_LEGACY else r.compression
         r.reason = "unreadable"
         return r                                    # cannot see inside: no verdict
     f = r.found
@@ -114,10 +182,25 @@ def scan_bytes(kernel):
 
 
 def scan_file(path):
-    """Scan a boot/recovery image or a raw kernel file."""
+    """Scan a boot/recovery image or a raw kernel file (result cached per file)."""
+    from . import paths
+    st = os.stat(path)
+    key = hashlib.sha1(f"{SCAN_VERSION}|{os.path.abspath(path)}|{st.st_size}|{st.st_mtime_ns}"
+                       .encode()).hexdigest()[:16]
+    cache = paths.cache_root() / f"scan-{key}.json"
+    try:
+        return Scan(**json.loads(cache.read_text(encoding="utf-8")))
+    except (OSError, ValueError, TypeError):
+        pass
     data = open(path, "rb").read()
     try:
         kernel, _ = bootimg.parse(data)
     except bootimg.NotBootImage:
         kernel = data
-    return scan_bytes(kernel)
+    r = scan_bytes(kernel)
+    try:
+        cache.parent.mkdir(parents=True, exist_ok=True)
+        cache.write_text(json.dumps(asdict(r)), encoding="utf-8")
+    except OSError:
+        pass
+    return r

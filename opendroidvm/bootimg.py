@@ -27,10 +27,10 @@ def parse(data):
     if data[:8] != MAGIC:
         raise NotBootImage(t("not_boot"))
     version = struct.unpack_from("<I", data, 40)[0]
-    if version >= 3:
+    if version in (3, 4):
         ksz, rsz = struct.unpack_from("<II", data, 8)
         page = 4096
-    else:
+    else:   # 0-2, or garbage: old Samsung/Qualcomm images store other data in this field
         ksz, _, rsz = struct.unpack_from("<III", data, 8)
         page = struct.unpack_from("<I", data, 36)[0]
     if page < 512 or page & (page - 1):      # must be a power of two (0 would divide by zero)
@@ -54,18 +54,20 @@ def extract(img_path, out_dir):
     out.mkdir(parents=True, exist_ok=True)
     kernel, ramdisk = parse(Path(img_path).read_bytes())
     kp, rp = out / "kernel", out / "ramdisk.img"
-    kp.write_bytes(_gunzip(kernel))
-    rp.write_bytes(ramdisk)
+    for dest, blob in ((kp, _gunzip(kernel)), (rp, ramdisk)):
+        tmp = dest.with_name(f"{dest.name}.{os.getpid()}.tmp")   # atomic: two odvm runs cannot clash
+        tmp.write_bytes(blob)
+        os.replace(tmp, dest)
     return kp, rp
 
 
 def cache_dir(img_path):
     """Per-image persistent cache folder (avoids re-extracting)."""
+    from . import paths
     st = os.stat(img_path)
     key = hashlib.sha1(f"{os.path.abspath(img_path)}|{st.st_size}|{st.st_mtime_ns}"
                        .encode()).hexdigest()[:16]
-    base = os.environ.get("XDG_CACHE_HOME") or os.path.join(os.path.expanduser("~"), ".cache")
-    return Path(base) / "opendroidvm" / key
+    return paths.cache_root() / key
 
 
 def kernel_kind(path):
