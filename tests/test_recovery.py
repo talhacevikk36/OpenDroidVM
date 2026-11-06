@@ -133,7 +133,7 @@ def test_start_unknown_device_suggests(capsys):
 
 def test_wizard_full_flow(monkeypatch, tmp_path, capsys):
     monkeypatch.chdir(tmp_path)
-    answers = iter(["galaxy s10", "1", "3", "1", "y"])     # search, pick, no recovery, fast, confirm
+    answers = iter(["galaxy s10", "1", "y", "3", "1", "y"])   # search, pick, continue anyway (measured: no boot), no recovery, fast, confirm
     monkeypatch.setattr("builtins.input", lambda prompt="": next(answers))
     called = {}
     monkeypatch.setattr(cli.subprocess, "call", lambda cmd: called.setdefault("cmd", cmd) and 0)

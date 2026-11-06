@@ -161,8 +161,9 @@ def scan_bytes(kernel):
                 r.found[key] = True
         for name, w in VENDORS:
             vendor_hits[name] = vendor_hits.get(name, 0) + blob.count(w)
-    best = max(vendor_hits.items(), key=lambda kv: kv[1], default=("", 0))
-    r.vendor = best[0] if best[1] >= 5 else ""
+    ranked = sorted(vendor_hits.items(), key=lambda kv: kv[1], reverse=True) + [("", 0), ("", 0)]
+    # a phone kernel is dominated by ONE vendor; generic kernels (distro) mention several
+    r.vendor = ranked[0][0] if ranked[0][1] >= 5 and ranked[0][1] >= 3 * ranked[1][1] else ""
     if not seen_blob and not any(r.found.values()) and r.arch == "unknown":
         r.compression = "lz4?" if kernel[:4] == LZ4_LEGACY else r.compression
         r.reason = "unreadable"

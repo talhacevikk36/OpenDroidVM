@@ -114,7 +114,7 @@ def test_scan_result_is_cached(tmp_path, monkeypatch):
 # ---------- new features
 def test_compat_label_and_note(monkeypatch, capsys):
     monkeypatch.setitem(compat_data.MEASURED, "s10", {"verdict": "no", "reason": "no_uart", "arch": "arm64", "soc": "x"})
-    assert compat.label("s10") == "twrp:no-boot" and compat.label("pixel") == ""
+    assert compat.label("s10") == "twrp:no-boot" and compat.label("pixel4a") == ""
     assert "will NOT boot in QEMU" in cli.compat_note(profiles.find("s10"))
     cli.main(["list", "s10"])
     assert "<twrp:no-boot>" in capsys.readouterr().out
@@ -277,3 +277,18 @@ def test_monitor_echo_with_cursor_codes_is_cleaned():
     raw = "i\x1b[K\x1b[Din\x1b[K\x1b[D\x1b[Dinf\x1b[K\x1b[D\x1b[D\x1b[Dinfo\x1b[K"
     assert keys.render_terminal(raw) == "info"
     assert keys.render_terminal("VM status: running") == "VM status: running"
+
+
+def test_vendor_hint_only_for_single_vendor_kernels():
+    head = bytearray(64); head[56:60] = b"ARMd"
+    phone = bytes(head) + b"qcom,x " * 40 + b"samsung,exynos " * 2 + b"\0" * 100
+    generic = bytes(head) + b"qcom,x " * 40 + b"mediatek,y " * 30 + b"\0" * 100
+    assert kernelscan.scan_bytes(phone).vendor == "Qualcomm"
+    assert kernelscan.scan_bytes(generic).vendor == ""         # distro kernels list many vendors
+
+
+def test_measured_table_matches_what_we_ship():
+    assert len(compat_data.MEASURED) == 20
+    assert all(profiles.find(i) for i in compat_data.MEASURED)
+    assert compat.get("s4")["reason"] == "no_virt" and compat.get("s7")["reason"] == "no_uart"
+    assert compat.label("s10") == "twrp:no-boot" and compat.label("pixel2") == "twrp:?"
