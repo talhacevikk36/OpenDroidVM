@@ -39,6 +39,28 @@ def stats(ppm):
     return w, h, 100.0 * nonblack / max(1, len(triples)), len(colors)
 
 
+def art(ppm, cw=16, ch=32):
+    """Coarse picture of the screen: '#' where a cell has any non-black pixel."""
+    d = open(ppm, "rb").read()
+    parts = d.split(b"\n", 3)
+    w, h = (int(x) for x in parts[1].split())
+    pix = parts[3]
+    rows = []
+    for cy in range(0, h, ch):
+        row = ""
+        for cx in range(0, w, cw):
+            hit = False
+            for y in range(cy, min(cy + ch, h), 4):
+                base = (y * w + cx) * 3
+                seg = pix[base:base + cw * 3]
+                if seg.strip(b"\0"):
+                    hit = True
+                    break
+            row += "#" if hit else "."
+        rows.append(row)
+    return rows
+
+
 cmd = connect(sys.argv[1])
 t0, out = time.time(), []
 for t in (float(x) for x in sys.argv[2:]):
@@ -52,5 +74,13 @@ for t in (float(x) for x in sys.argv[2:]):
         out.append(f"t={int(t)}s {w}x{h} nonblack={pct:.2f}% colors={n}")
     except Exception as e:   # noqa: BLE001
         out.append(f"t={int(t)}s stats-error={e}")
+try:
+    rows = art("/tmp/shot.ppm")
+    used = [i for i, r in enumerate(rows) if "#" in r]
+    out.append(f"art rows with content={len(used)} of {len(rows)} first={used[:1]} last={used[-1:]}")
+    print("\n".join(rows))
+    print("::notice::art :: " + "/".join(rows))
+except Exception as e:   # noqa: BLE001
+    out.append(f"art-error={e}")
 print("\n".join(out))
 print("::notice::display probe :: " + " | ".join(out))

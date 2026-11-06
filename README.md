@@ -8,6 +8,8 @@ How it works under the hood: [docs/how-it-works.md](docs/how-it-works.md)
 
 `odvm` is short for **O**pen**D**roid**VM**; the long name `opendroidvm` works too.
 
+> **ALPHA.** All versions are alpha (`0.9.x-alpha.N`) until a phone's recovery/Android boots to an interactive screen under odvm; then 1.0.0. See [ROADMAP.md](ROADMAP.md).
+>
 > **Read this first (measured):** the official TWRP images of real phones do **not** boot on QEMU. We downloaded 20 of them and looked inside every kernel (`odvm check`): 18 cannot boot (no `virt` machine support or no PL011 serial driver), 2 (Pixel 2/3) use a compression we could not read. They are built for the phone's own chip. What *does* work: `odvm selftest` (a known-good ARM64 Linux), generic kernels, and the Android Emulator via `odvm avd`. Details below.
 
 ## What works, what does not (measured)

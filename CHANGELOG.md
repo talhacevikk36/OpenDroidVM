@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.9.1-alpha.1
+- **Alpha versioning:** all releases are alpha until a phone image really boots (then 1.0.0, see ROADMAP.md). `odvm --version`, the wizard and the README say so; older tags are marked as pre-releases
+- Updater understands alpha/beta/rc versions (`0.9.1a1 < 0.9.1`), reads the release *list* (GitHub's "latest" ignores pre-releases) and has a pre-release-aware atom-feed fallback; stable installs stay on stable unless `odvm config set channel alpha`
+- Release workflow flags `*-alpha*`/`*-beta*`/`*-rc*` tags as pre-releases (this first alpha is a normal release on purpose, so existing installs find it)
+
 ## 0.9.0 - honest about phone images, many PC fixes, 11 new commands
 **Finding:** 20 official TWRP images were downloaded and every kernel inspected: none can boot on QEMU `virt` (18 measured, 2 unreadable). `odvm list/start/wizard` now say so up front.
 - New: `check` (looks inside a kernel: drivers, SoC, verdict), `selftest` (boots Alpine ARM64; verified in CI), `avd create/run/doctor` (Android Emulator with a profile's specs, experimental), `vm stop|reset|pause|resume|status`, `screenshot`, `run --log`, `run --export` (.sh/.bat), `clone`, `config`, `clean`, `completion`

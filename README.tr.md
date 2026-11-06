@@ -6,6 +6,8 @@ Android cihaz profilleriyle QEMU uzerinde recovery (TWRP, OrangeFox vb.) ve ROM 
 
 `odvm`, **O**pen**D**roid**VM**'in kisaltmasidir; uzun hali `opendroidvm` de calisir.
 
+> **ALPHA.** Bir telefonun recovery'si/Android'i odvm altinda etkilesimli bir ekranla acilana kadar tum surumler alpha'dir (`0.9.x-alpha.N`); sonra 1.0.0. Bkz. [ROADMAP.md](ROADMAP.md).
+>
 > **Once oku (olculdu):** gercek telefonlarin resmi TWRP imajlari QEMU'da **acilmaz**. 20 tanesini indirip her kernel'in icine baktik (`odvm check`): 18'i acilamaz (`virt` makine destegi ya da PL011 seri suruculusu yok), 2'sinin (Pixel 2/3) sikistirmasi okunamadi. Telefonun kendi cipi icin derlenmisler. Calisanlar: `odvm selftest` (bilinen iyi ARM64 Linux), genel kernel'ler ve `odvm avd` ile Android Emulator. Ayrintilar asagida.
 
 ## Neler calisir, neler calismaz (olculdu)
