@@ -19,14 +19,22 @@ jobs:
           ls -la vmlinuz-virt initramfs-virt modloop-virt
       - name: Boot with a display driver and look at the screen
         run: |
+          set +e
           A=https://dl-cdn.alpinelinux.org/alpine/latest-stable
           qemu-system-aarch64 -M virt -cpu max -accel tcg,thread=multi -smp 2 -m 1024 \
             -kernel vmlinuz-virt -initrd initramfs-virt \
             -append "console=tty0 console=ttyAMA0 ip=dhcp alpine_repo=$A/main modloop=$A/releases/aarch64/netboot/modloop-virt" \
             -device virtio-gpu-pci -device virtio-keyboard-pci -device virtio-tablet-pci \
             -netdev user,id=n0 -device virtio-net-pci,netdev=n0 \
-            -display vnc=:1 -serial file:serial.log -qmp unix:qmp.sock,server,nowait -daemonize
-          python3 tools/display_probe.py qmp.sock 30 60 90 120 150 | tee probe.txt
-          pkill qemu-system-aarch64 || true
-          echo "--- serial log tail"; tail -n 25 serial.log
-          echo "::notice::serial markers :: $(grep -ciE 'virtio_gpu|frame buffer|fb0|login:|Welcome to Alpine' serial.log) matches; last: $(tail -n 3 serial.log | tr '\n' '|' | cut -c1-300)"
+            -display vnc=:1 -serial file:serial.log -qmp unix:qmp.sock,server,nowait \
+            -pidfile qemu.pid -daemonize
+          python3 tools/display_probe.py qmp.sock 45 90 150 | tee probe.txt
+          echo "serial.log: $(wc -l < serial.log) lines"
+          for m in "Linux version" "virtio_gpu" "Console: switching" "modloop" "Welcome to Alpine" "login:" "Kernel panic" "ip=dhcp\|DHCP"; do
+            echo "marker [$m]: $(grep -c "$m" serial.log)"
+          done | tee markers.txt
+          tail -n 14 serial.log | cut -c1-160 > tail.txt
+          echo "::notice::markers :: $(tr '\n' '|' < markers.txt)"
+          echo "::notice::serial tail :: $(tr '\n' '|' < tail.txt | cut -c1-1800)"
+          kill $(cat qemu.pid) 2>/dev/null
+          exit 0

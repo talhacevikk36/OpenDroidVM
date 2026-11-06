@@ -17,24 +17,36 @@ class Fake(BaseHTTPRequestHandler):
     def log_message(self, *a):
         pass
 
+    def _assets(self, base):
+        return [
+            {"name": "odvm-linux-x64", "browser_download_url": base + "/exe", "size": len(EXE), "digest": DIGEST},
+            {"name": "odvm-windows-x64.exe", "browser_download_url": base + "/exe", "size": len(EXE), "digest": DIGEST},
+            {"name": "odvm-macos", "browser_download_url": base + "/exe", "size": len(EXE), "digest": DIGEST},
+            {"name": "opendroidvm-9.9.9a2-py3-none-any.whl", "browser_download_url": base + "/whl", "size": 1},
+        ]
+
     def do_GET(self):
         base = f"http://127.0.0.1:{self.server.server_address[1]}"
-        if self.path == "/latest":
-            body = json.dumps({"tag_name": "v9.9.9", "assets": [
-                {"name": "odvm-linux-x64", "browser_download_url": base + "/exe", "size": len(EXE), "digest": DIGEST},
-                {"name": "odvm-windows-x64.exe", "browser_download_url": base + "/exe", "size": len(EXE), "digest": DIGEST},
-                {"name": "odvm-macos", "browser_download_url": base + "/exe", "size": len(EXE), "digest": DIGEST},
-                {"name": "opendroidvm-9.9.9-py3-none-any.whl", "browser_download_url": base + "/whl", "size": 1},
-            ]}).encode()
-        elif self.path == "/web/releases/latest":
-            self.send_response(302); self.send_header("Location", "/web/releases/tag/v9.9.9")
+        feed = ("<feed>" + "".join(f'<entry><link rel="alternate" href="https://github.com/x/y/releases/tag/{t}"/></entry>'
+                                   for t in ("v9.9.9-alpha.1", "v9.9.9-alpha.2", "v0.1.0")) + "</feed>")
+        if self.path.startswith("/releases"):
+            body = json.dumps([
+                {"tag_name": "v9.9.9-alpha.1", "prerelease": True, "draft": False, "assets": []},
+                {"tag_name": "v9.9.9-alpha.2", "prerelease": True, "draft": False, "assets": self._assets(base)},
+                {"tag_name": "v99.0.0", "draft": True, "prerelease": False, "assets": []},   # drafts are ignored
+                {"tag_name": "v0.1.0", "prerelease": False, "draft": False, "assets": []},
+            ]).encode()
+        elif self.path == "/web/releases.atom":
+            body = feed.encode()
+        elif self.path == "/web2/releases/latest":
+            self.send_response(302); self.send_header("Location", "/web2/releases/tag/v9.9.9")
             self.send_header("Content-Length", "0"); self.end_headers(); return
         elif self.path == "/forbidden":
             self.send_response(403); self.send_header("Content-Length", "0"); self.end_headers(); return
         elif self.path == "/exe":
             body = EXE
         else:
-            self.send_response(404); self.end_headers(); return
+            self.send_response(404); self.send_header("Content-Length", "0"); self.end_headers(); return
         self.send_response(200); self.send_header("Content-Length", str(len(body))); self.end_headers()
         self.wfile.write(body)
 
@@ -43,7 +55,7 @@ class Fake(BaseHTTPRequestHandler):
 def api(monkeypatch):
     srv = HTTPServer(("127.0.0.1", 0), Fake)
     threading.Thread(target=srv.serve_forever, daemon=True).start()
-    monkeypatch.setenv("ODVM_UPDATE_API", f"http://127.0.0.1:{srv.server_address[1]}/latest")
+    monkeypatch.setenv("ODVM_UPDATE_API", f"http://127.0.0.1:{srv.server_address[1]}/releases")
     yield
     srv.shutdown()
 
@@ -53,9 +65,26 @@ def test_version_compare():
     assert updater.is_newer("v0.10.0", "0.9.9") and not updater.is_newer("0.7.4", "0.7.5")
 
 
+def test_alpha_ordering_and_names():
+    order = ["0.9.0", "0.9.1a1", "0.9.1-alpha.2", "0.9.1b1", "0.9.1rc1", "0.9.1", "v1.0.0-alpha.1", "1.0.0"]
+    assert sorted(order, key=updater.parse) == order
+    assert updater.pep440("v0.9.1-alpha.2") == "0.9.1a2" and updater.pep440("v1.0.0") == "1.0.0"
+    from opendroidvm import display_version
+    assert display_version("0.9.1a1") == "0.9.1-alpha.1" and display_version("1.0.0") == "1.0.0"
+    assert updater.is_prerelease("0.9.1a1") and not updater.is_prerelease("1.0.0")
+
+
+def test_stable_users_do_not_get_alphas_unless_they_opt_in(api, monkeypatch):
+    monkeypatch.setattr(updater, "__version__", "0.1.0")           # a stable install
+    assert updater.latest_release()["tag"] == "v0.1.0"             # only stable releases visible
+    config = __import__("opendroidvm.config", fromlist=["x"])
+    config.set_value("channel", "alpha")
+    assert updater.latest_release()["tag"] == "v9.9.9-alpha.2"
+
+
 def test_latest_release_and_offline(api, monkeypatch):
     info = updater.latest_release()
-    assert info["tag"] == "v9.9.9" and "odvm-linux-x64" in info["assets"]
+    assert info["tag"] == "v9.9.9-alpha.2" and "odvm-linux-x64" in info["assets"]   # newest, drafts ignored
     monkeypatch.setenv("ODVM_UPDATE_API", "http://127.0.0.1:9/none")
     monkeypatch.setenv("ODVM_UPDATE_WEB", "http://127.0.0.1:9/web")
     assert updater.latest_release(timeout=1) is None          # offline: silent
@@ -173,14 +202,21 @@ def test_warnings_explain_black_screen(tmp_path, capsys):
     assert capsys.readouterr().err == ""
 
 
-def test_api_rate_limited_falls_back_to_web(api, monkeypatch):
+def test_api_rate_limited_falls_back_to_atom_feed(api, monkeypatch):
     port = os.environ["ODVM_UPDATE_API"].split(":")[-1].split("/")[0]
     monkeypatch.setenv("ODVM_UPDATE_API", f"http://127.0.0.1:{port}/forbidden")     # 403 like a shared IP
     monkeypatch.setenv("ODVM_UPDATE_WEB", f"http://127.0.0.1:{port}/web")
     info = updater.latest_release()
-    assert info["tag"] == "v9.9.9"
-    assert info["assets"]["odvm-linux-x64"]["url"].endswith("/web/releases/download/v9.9.9/odvm-linux-x64")
-    assert "opendroidvm-9.9.9-py3-none-any.whl" in info["assets"]
+    assert info["tag"] == "v9.9.9-alpha.2"
+    assert info["assets"]["odvm-linux-x64"]["url"].endswith("/web/releases/download/v9.9.9-alpha.2/odvm-linux-x64")
+    assert "opendroidvm-9.9.9a2-py3-none-any.whl" in info["assets"]     # pip's normalised name
+
+
+def test_redirect_fallback_when_there_is_no_feed(api, monkeypatch):
+    port = os.environ["ODVM_UPDATE_API"].split(":")[-1].split("/")[0]
+    monkeypatch.setenv("ODVM_UPDATE_API", f"http://127.0.0.1:{port}/forbidden")
+    monkeypatch.setenv("ODVM_UPDATE_WEB", f"http://127.0.0.1:{port}/web2")
+    assert updater.latest_release()["tag"] == "v9.9.9"
 
 
 def test_web_fallback_offline_and_no_release(monkeypatch):

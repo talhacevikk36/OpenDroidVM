@@ -285,7 +285,7 @@ def _disk(a):
 
 
 def _doctor(a):
-    print("OpenDroidVM", __version__)
+    print("OpenDroidVM", _version_text())
     if qemu.is_termux():
         print(t("doctor_termux"))
     print("Python :", platform.python_version(), platform.system(), platform.machine())
@@ -556,6 +556,12 @@ def _install(a):
     return qemu.install(a.dry_run)
 
 
+def _version_text():
+    from . import display_version, updater
+    v = display_version()
+    return v + (" (alpha: phone images do not boot yet, see README)" if updater.is_prerelease(__version__) else "")
+
+
 def _pre_lang(argv):
     """Language must be known before building --help texts."""
     argv = sys.argv[1:] if argv is None else argv
@@ -571,7 +577,7 @@ def _pre_lang(argv):
 def main(argv=None):
     _pre_lang(argv)
     ap = argparse.ArgumentParser(prog="odvm", description="OpenDroidVM")
-    ap.add_argument("--version", action="version", version=__version__)
+    ap.add_argument("--version", action="version", version=_version_text())
     ap.add_argument("--lang", choices=sorted(i18n.M), help=t("h_lang"))
     sp = ap.add_subparsers(dest="cmd")
 

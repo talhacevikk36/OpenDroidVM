@@ -14,7 +14,7 @@ import time
 import urllib.error
 import urllib.request
 
-from . import __version__, ui
+from . import __version__, display_version, ui
 from .i18n import t
 
 REPO = "talhacevikk36/OpenDroidVM"
@@ -24,16 +24,47 @@ EXE_NAMES = {"Windows": "odvm-windows-x64.exe", "Darwin": "odvm-macos", "Linux":
 
 
 def api_url():
-    return os.environ.get("ODVM_UPDATE_API", f"https://api.github.com/repos/{REPO}/releases/latest")
+    return os.environ.get("ODVM_UPDATE_API", f"https://api.github.com/repos/{REPO}/releases?per_page=15")
+
+
+_PRE = {"a": 0, "alpha": 0, "b": 1, "beta": 1, "rc": 2}
+_VER = re.compile(r"^[vV]?(\d+)\.(\d+)\.(\d+)(?:[-._]?(alpha|beta|rc|a|b)[-._]?(\d*))?", re.I)
 
 
 def parse(v):
-    nums = [int(x) for x in re.findall(r"\d+", str(v).lstrip("vV").split("-")[0])][:3]
-    return tuple(nums + [0] * (3 - len(nums)))
+    """(major, minor, patch, rank, n): 0.9.1a1 < 0.9.1a2 < 0.9.1b1 < 0.9.1rc1 < 0.9.1."""
+    m = _VER.match(str(v).strip())
+    if not m:
+        return (0, 0, 0, 3, 0)
+    pre = (m.group(4) or "").lower()
+    return (int(m.group(1)), int(m.group(2)), int(m.group(3)),
+            _PRE[pre] if pre else 3, int(m.group(5) or 0) if pre else 0)
+
+
+def is_prerelease(v):
+    return parse(v)[3] != 3
+
+
+def pep440(tag):
+    """v0.9.1-alpha.2 -> 0.9.1a2 (the name pip/setuptools gives the wheel)."""
+    M, m, p, rank, n = parse(tag)
+    return f"{M}.{m}.{p}" + ({0: "a", 1: "b", 2: "rc"}[rank] + str(n) if rank != 3 else "")
 
 
 def is_newer(tag, current=None):
     return parse(tag) > parse(current or __version__)
+
+
+def wants_prerelease():
+    """Alpha users stay on the alpha channel; stable users only see stable releases
+    unless they opt in with `odvm config set channel alpha`."""
+    from . import config
+    return is_prerelease(__version__) or config.get("channel") == "alpha"
+
+
+def _pick(tags):
+    tags = [t for t in tags if wants_prerelease() or not is_prerelease(t)]
+    return max(tags, key=parse) if tags else None
 
 
 def _state_file():
@@ -66,11 +97,27 @@ class _NoRedirect(urllib.request.HTTPRedirectHandler):
         return None
 
 
+def _web_assets(tag):
+    base = f"{web_base()}/releases/download/{tag}/"
+    names = [f"opendroidvm-{pep440(tag)}-py3-none-any.whl", *EXE_NAMES.values()]
+    return {n: {"url": base + n, "size": 0, "digest": ""} for n in names}
+
+
 def _latest_via_web(timeout=4):
-    """Fallback without the API (its anonymous limit is 60/hour per IP, shared on many networks):
-    /releases/latest redirects to /releases/tag/<tag>; asset URLs follow a fixed pattern."""
-    req = urllib.request.Request(web_base() + "/releases/latest",
-                                 headers={"User-Agent": "OpenDroidVM-updater"})
+    """Fallback without the API (anonymous limit: 60/hour per IP, shared on many networks).
+    1) the public releases.atom feed (includes pre-releases); 2) /releases/latest redirect
+    (stable releases only). Asset URLs follow a fixed pattern."""
+    ua = {"User-Agent": "OpenDroidVM-updater"}
+    try:
+        req = urllib.request.Request(web_base() + "/releases.atom", headers=ua)
+        with urllib.request.urlopen(req, timeout=timeout) as r:
+            feed = r.read().decode("utf-8", "replace")
+        tag = _pick(re.findall(r"/releases/tag/([^\"'<>\s?#]+)", feed))
+        if tag:
+            return {"tag": tag, "assets": _web_assets(tag)}
+    except (urllib.error.URLError, OSError):
+        pass
+    req = urllib.request.Request(web_base() + "/releases/latest", headers=ua)
     try:
         urllib.request.build_opener(_NoRedirect).open(req, timeout=timeout)
         return None                         # 200 without a redirect: no release
@@ -78,18 +125,14 @@ def _latest_via_web(timeout=4):
         m = re.search(r"/releases/tag/([^/?#]+)", e.headers.get("Location", "") or "")
         if e.code not in (301, 302, 303, 307, 308) or not m:
             return None
-        tag = m.group(1)
+        return {"tag": m.group(1), "assets": _web_assets(m.group(1))}
     except (urllib.error.URLError, OSError):
         return None
-    base = f"{web_base()}/releases/download/{tag}/"
-    names = [f"opendroidvm-{tag.lstrip('vV')}-py3-none-any.whl", *EXE_NAMES.values()]
-    return {"tag": tag, "assets": {n: {"url": base + n, "size": 0, "digest": ""} for n in names}}
 
 
 def latest_release(timeout=4):
-    """{'tag': 'v0.8.0', 'assets': {name: {'url','size','digest'}}} or None when offline."""
-    info = _latest_via_api(timeout)
-    return info or _latest_via_web(timeout)
+    """{'tag': 'v0.9.1-alpha.2', 'assets': {name: {'url','size','digest'}}} or None when offline."""
+    return _latest_via_api(timeout) or _latest_via_web(timeout)
 
 
 def _latest_via_api(timeout=4):
@@ -100,11 +143,18 @@ def _latest_via_api(timeout=4):
             j = json.loads(r.read().decode("utf-8"))
     except (urllib.error.URLError, OSError, ValueError):
         return None
-    if not isinstance(j, dict) or not j.get("tag_name"):
+    if isinstance(j, dict):
+        j = [j]
+    if not isinstance(j, list):
+        return None
+    rels = {x["tag_name"]: x for x in j if isinstance(x, dict) and x.get("tag_name")
+            and not x.get("draft")}
+    tag = _pick(list(rels))
+    if not tag:
         return None
     assets = {a["name"]: {"url": a.get("browser_download_url", ""), "size": a.get("size", 0),
-                          "digest": a.get("digest") or ""} for a in j.get("assets", [])}
-    return {"tag": j["tag_name"], "assets": assets}
+                          "digest": a.get("digest") or ""} for a in rels[tag].get("assets", [])}
+    return {"tag": tag, "assets": assets}
 
 
 def is_frozen():
@@ -179,7 +229,7 @@ def apply_update(info):
 
 def offer(info, assume_yes=False):
     """Ask and update. True if the program was updated (caller should exit)."""
-    print(t("upd_available", new=info["tag"], cur=__version__))
+    print(t("upd_available", new=info["tag"], cur=display_version()))
     if not (assume_yes or ui.yes(t("upd_ask"))):
         return False
     print(t("upd_downloading", name=info["tag"]))
@@ -207,10 +257,10 @@ def check_and_offer(force=False, assume_yes=False, only_check=False):
     tag = (info or {}).get("tag") or st.get("latest")
     if not tag or not is_newer(tag):
         if force and tag:
-            print(t("upd_latest", v=__version__))
+            print(t("upd_latest", v=display_version()))
         return False
     if only_check:
-        print(t("upd_available", new=tag, cur=__version__))
+        print(t("upd_available", new=tag, cur=display_version()))
         return False
     if not force and st.get("declined") == tag and now - st.get("declined_at", 0) < ASK_AGAIN:
         return False

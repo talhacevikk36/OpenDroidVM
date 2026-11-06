@@ -84,6 +84,7 @@ def _choose_mode():
 def run():
     try:
         print(t("wiz_title"))
+        print(t("alpha_note"))
         p = _choose_device()
         if not recovery.find_local(p.id) and not cli._compat_ok(p, False, interactive=True):
             return 0
