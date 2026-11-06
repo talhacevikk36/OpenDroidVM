@@ -125,7 +125,9 @@ def test_export_scripts(tmp_path, capsys):
     assert cli.main(["run", "pixel", "--export", str(sh), "--adb-port", "0", "--monitor-port", "0"]) == 0
     assert sh.read_text().startswith("#!/bin/sh\nexec ") and os.access(sh, os.X_OK)
     cli.main(["run", "pixel", "--export", str(bat), "--adb-port", "0", "--monitor-port", "0"])
-    assert bat.read_bytes().startswith(b"@echo off\r\n")
+    data = bat.read_bytes()
+    assert data.startswith(b"@echo off\r\n") and b"\r\r" not in data and data.endswith(b"\r\n")
+    assert b"\r" not in sh.read_bytes()
 
 
 def test_clone_profile():

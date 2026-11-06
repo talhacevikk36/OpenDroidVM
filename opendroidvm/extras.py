@@ -12,11 +12,12 @@ def write_script(cmd, path):
     """Write the QEMU command as .bat/.cmd (Windows) or an executable shell script."""
     path = Path(path)
     if path.suffix.lower() in (".bat", ".cmd"):
-        path.write_text("@echo off\r\n" + subprocess.list2cmdline([str(c) for c in cmd]) + "\r\n",
-                        encoding="utf-8")
+        # bytes, not write_text: text mode would turn "\r\n" into "\r\r\n" on Windows
+        path.write_bytes(("@echo off\r\n" + subprocess.list2cmdline([str(c) for c in cmd])
+                          + "\r\n").encode("utf-8"))
     else:
-        path.write_text("#!/bin/sh\nexec " + " ".join(shlex.quote(str(c)) for c in cmd) + "\n",
-                        encoding="utf-8")
+        path.write_bytes(("#!/bin/sh\nexec " + " ".join(shlex.quote(str(c)) for c in cmd)
+                          + "\n").encode("utf-8"))      # LF only, also on Windows (WSL/Git Bash)
         path.chmod(0o755)
     return path
 
