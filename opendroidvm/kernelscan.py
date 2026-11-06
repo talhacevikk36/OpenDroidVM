@@ -20,7 +20,7 @@ MAX_OUT = 256 * 1024 * 1024
 MIN_BLOB = 64 * 1024
 MARKERS = {
     "virt_machine": [b"linux,dummy-virt"],
-    "uart": [b"arm,pl011", b"amba-pl011", b"ttyAMA"],
+    "uart": [b"arm,pl011", b"amba-pl011", b"uart-pl011", b"ttyAMA"],
     "virtio_mmio": [b"virtio_mmio", b"virtio-mmio"],
     "virtio_pci": [b"virtio-pci", b"virtio_pci"],
     "virtio_blk": [b"virtio_blk"],

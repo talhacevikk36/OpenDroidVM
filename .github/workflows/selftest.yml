@@ -21,4 +21,8 @@ jobs:
           odvm selftest --yes --timeout 240 2>&1 | tee out.txt
           RC=${PIPESTATUS[0]}
           echo "::notice::selftest rc=$RC :: $(tail -c 1800 out.txt | tr '\n' '|')"
+          echo "--- positive control: scan the known-good kernel"
+          K=$(find ~/.cache -name vmlinuz-virt | head -1)
+          odvm check "$K" 2>&1 | tee check.txt
+          echo "::notice::control scan :: $(tr '\n' '|' < check.txt)"
           exit 0
