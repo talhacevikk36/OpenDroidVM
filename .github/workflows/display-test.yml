@@ -1,0 +1,32 @@
+name: display-test
+on:
+  workflow_dispatch:
+  push:
+    paths: [".github/workflows/display-test.yml", "tools/display_probe.py"]
+permissions:
+  contents: read
+jobs:
+  display:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - run: sudo apt-get update -qq && sudo apt-get install -y -qq qemu-system-arm
+      - name: Download Alpine netboot (kernel, initramfs, modloop)
+        run: |
+          B=https://dl-cdn.alpinelinux.org/alpine/latest-stable/releases/aarch64/netboot
+          for f in vmlinuz-virt initramfs-virt modloop-virt; do curl -fsSL -o $f $B/$f; done
+          ls -la vmlinuz-virt initramfs-virt modloop-virt
+      - name: Boot with a display driver and look at the screen
+        run: |
+          A=https://dl-cdn.alpinelinux.org/alpine/latest-stable
+          qemu-system-aarch64 -M virt -cpu max -accel tcg,thread=multi -smp 2 -m 1024 \
+            -kernel vmlinuz-virt -initrd initramfs-virt \
+            -append "console=tty0 console=ttyAMA0 ip=dhcp alpine_repo=$A/main modloop=$A/releases/aarch64/netboot/modloop-virt" \
+            -device virtio-gpu-pci -device virtio-keyboard-pci -device virtio-tablet-pci \
+            -netdev user,id=n0 -device virtio-net-pci,netdev=n0 \
+            -display vnc=:1 -serial file:serial.log -qmp unix:qmp.sock,server,nowait -daemonize
+          python3 tools/display_probe.py qmp.sock 30 60 90 120 150 | tee probe.txt
+          pkill qemu-system-aarch64 || true
+          echo "--- serial log tail"; tail -n 25 serial.log
+          echo "::notice::serial markers :: $(grep -ciE 'virtio_gpu|frame buffer|fb0|login:|Welcome to Alpine' serial.log) matches; last: $(tail -n 3 serial.log | tr '\n' '|' | cut -c1-300)"
