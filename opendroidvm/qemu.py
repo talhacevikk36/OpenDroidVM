@@ -104,3 +104,30 @@ def free_port(start, span=50, exclude=()):
         if p not in exclude and port_free(p):
             return p
     return None
+
+
+def host_ram_mb():
+    """Available RAM in MB (None if unknown)."""
+    try:
+        if os.path.exists("/proc/meminfo"):
+            for line in open("/proc/meminfo"):
+                if line.startswith("MemAvailable:"):
+                    return int(line.split()[1]) // 1024
+        if platform.system() == "Windows":
+            import ctypes
+
+            class MS(ctypes.Structure):
+                _fields_ = [("l", ctypes.c_ulong), ("load", ctypes.c_ulong),
+                            ("total", ctypes.c_ulonglong), ("avail", ctypes.c_ulonglong),
+                            ("tp", ctypes.c_ulonglong), ("ap", ctypes.c_ulonglong),
+                            ("tv", ctypes.c_ulonglong), ("av", ctypes.c_ulonglong),
+                            ("x", ctypes.c_ulonglong)]
+            ms = MS(); ms.l = ctypes.sizeof(MS)
+            ctypes.windll.kernel32.GlobalMemoryStatusEx(ctypes.byref(ms))
+            return int(ms.avail // (1024 * 1024))
+        if platform.system() == "Darwin":
+            out = subprocess.check_output(["sysctl", "-n", "hw.memsize"], text=True)
+            return int(out) // (1024 * 1024) // 2        # total/2 is a safe stand-in for "available"
+    except (OSError, ValueError, subprocess.CalledProcessError, AttributeError):
+        pass
+    return None

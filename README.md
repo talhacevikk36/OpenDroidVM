@@ -8,6 +8,38 @@ How it works under the hood: [docs/how-it-works.md](docs/how-it-works.md)
 
 `odvm` is short for **O**pen**D**roid**VM**; the long name `opendroidvm` works too.
 
+> **Read this first (measured):** the official TWRP images of real phones do **not** boot on QEMU. We downloaded 20 of them and looked inside every kernel (`odvm check`): 18 cannot boot (no `virt` machine support or no PL011 serial driver), 2 (Pixel 2/3) use a compression we could not read. They are built for the phone's own chip. What *does* work: `odvm selftest` (a known-good ARM64 Linux), generic kernels, and the Android Emulator via `odvm avd`. Details below.
+
+## What works, what does not (measured)
+
+| Official TWRP of ... | Result in QEMU `virt` |
+|---|---|
+| Galaxy S4/S5/Note 4, Nexus 5 (32-bit) | cannot boot - kernel has no `virt` machine support |
+| Galaxy S7/S8/S9/S10 (Exynos), Pixel, Nexus 5X/6P, OnePlus 3/5/6/7 Pro, Poco F1, Mi A2, Redmi Note 7 | cannot boot - no PL011 serial driver (it only knows its own chip's UART) |
+| Pixel 2, Pixel 3 | kernel compression not readable by `odvm check` (Qualcomm kernels, same outcome expected) |
+
+Why: QEMU's `virt` board has no Snapdragon/Exynos hardware, and a phone kernel only contains drivers for its own phone. This is not a bug in odvm and no setting fixes it. Use `odvm check <device or image>` to see it for any image, and `odvm list` shows `<twrp:no-boot>` for the measured devices.
+
+What really boots:
+- `odvm selftest` boots Alpine Linux (ARM64) and proves QEMU, the serial console and your machine work (verified on GitHub's runners and in Termux-like conditions).
+- Kernels built for `virt` (distro kernels, AOSP *Cuttlefish*/GKI builds) via `--boot`/`--recovery`.
+- **Android Emulator:** `odvm avd create s10` builds an AVD with that profile's screen, density, RAM and cores, `odvm avd run s10` starts a real Android (needs the Android SDK; experimental, not available on phones/Termux).
+
+## More commands
+
+```
+odvm check s10                 # why an image does (not) boot, from the kernel's contents
+odvm selftest                  # boot a known-good Linux
+odvm vm status|pause|resume|reset|stop      # control the running VM (ports are found automatically)
+odvm screenshot --out shot.png
+odvm run s10 --log boot.txt    # also save the serial console
+odvm run s10 --recovery x.img --export go.sh   # write a launch script (.sh / .bat)
+odvm clone s10 s10big --ram 12288 --name "My S10"
+odvm config set mode fast      # lang, mode, qemu, adb_port, recovery_dir, update_check
+odvm clean --recovery          # delete cache (+ downloaded recoveries)
+odvm completion bash|zsh|powershell
+```
+
 ## Quick start (easiest)
 
 ```

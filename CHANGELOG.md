@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.9.0 - honest about phone images, many PC fixes, 11 new commands
+**Finding:** 20 official TWRP images were downloaded and every kernel inspected: none can boot on QEMU `virt` (18 measured, 2 unreadable). `odvm list/start/wizard` now say so up front.
+- New: `check` (looks inside a kernel: drivers, SoC, verdict), `selftest` (boots Alpine ARM64; verified in CI), `avd create/run/doctor` (Android Emulator with a profile's specs, experimental), `vm stop|reset|pause|resume|status`, `screenshot`, `run --log`, `run --export` (.sh/.bat), `clone`, `config`, `clean`, `completion`
+- Fix: Samsung/old Qualcomm recovery images were rejected as "corrupt" (garbage in the header-version field) and could not be opened at all
+- Fix (security): adb port forwarding listened on all network interfaces; now 127.0.0.1 only
+- Fix: paths with commas broke `-drive`; Windows shows cmd.exe-quoted commands; RAM capped when the machine has less than the profile wants (QEMU "cannot allocate memory")
+- Fix: cache/data folders follow each OS (LOCALAPPDATA, ~/Library, XDG); recoveries are no longer tied to the current folder; atomic extraction (two odvm runs cannot clash)
+- `odvm key/vm/screenshot` find the running VM's ports automatically; LZ4 kernels (Pixel) are decoded; `odvm list | head` no longer prints a traceback
+
 ## 0.8.1
 - Fix: update check no longer depends on the GitHub API (anonymous limit is 60/hour per IP, so shared networks got 403 and "offline"); falls back to the public release page
 

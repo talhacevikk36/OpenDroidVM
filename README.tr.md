@@ -6,6 +6,38 @@ Android cihaz profilleriyle QEMU uzerinde recovery (TWRP, OrangeFox vb.) ve ROM 
 
 `odvm`, **O**pen**D**roid**VM**'in kisaltmasidir; uzun hali `opendroidvm` de calisir.
 
+> **Once oku (olculdu):** gercek telefonlarin resmi TWRP imajlari QEMU'da **acilmaz**. 20 tanesini indirip her kernel'in icine baktik (`odvm check`): 18'i acilamaz (`virt` makine destegi ya da PL011 seri suruculusu yok), 2'sinin (Pixel 2/3) sikistirmasi okunamadi. Telefonun kendi cipi icin derlenmisler. Calisanlar: `odvm selftest` (bilinen iyi ARM64 Linux), genel kernel'ler ve `odvm avd` ile Android Emulator. Ayrintilar asagida.
+
+## Neler calisir, neler calismaz (olculdu)
+
+| Su cihazin resmi TWRP'si | QEMU `virt` sonucu |
+|---|---|
+| Galaxy S4/S5/Note 4, Nexus 5 (32-bit) | acilmaz - kernel'de `virt` makine destegi yok |
+| Galaxy S7/S8/S9/S10 (Exynos), Pixel, Nexus 5X/6P, OnePlus 3/5/6/7 Pro, Poco F1, Mi A2, Redmi Note 7 | acilmaz - PL011 seri suruculusu yok (sadece kendi cipinin UART'ini bilir) |
+| Pixel 2, Pixel 3 | `odvm check` kernel sikistirmasini okuyamadi (Qualcomm kernel'i, ayni sonuc beklenir) |
+
+Neden: QEMU'nun `virt` kartinda Snapdragon/Exynos donanimi yok ve telefon kernel'i sadece kendi telefonunun suruculerini icerir. Bu odvm'de bir hata degil, hicbir ayar duzeltmez. Herhangi bir imaj icin `odvm check <cihaz veya imaj>` kullan; `odvm list` olculen cihazlarda `<twrp:no-boot>` gosterir.
+
+Gercekten acilanlar:
+- `odvm selftest` Alpine Linux (ARM64) acar ve QEMU'nun, seri konsolun, cihazinin calistigini kanitlar (GitHub sunucularinda dogrulandi).
+- `virt` icin derlenmis kernel'ler (dagitim kernel'leri, AOSP *Cuttlefish*/GKI) `--boot`/`--recovery` ile.
+- **Android Emulator:** `odvm avd create s10` o profilin ekran, yogunluk, RAM ve cekirdegiyle bir AVD olusturur, `odvm avd run s10` gercek bir Android baslatir (Android SDK gerekir; deneysel, telefonda/Termux'ta yok).
+
+## Diger komutlar
+
+```
+odvm check s10                 # bir imaj neden aciliyor/acilmiyor (kernel icerigine bakar)
+odvm selftest                  # bilinen iyi bir Linux ac
+odvm vm status|pause|resume|reset|stop      # calisan VM'i yonet (portlar otomatik bulunur)
+odvm screenshot --out shot.png
+odvm run s10 --log boot.txt    # seri konsolu dosyaya da kaydet
+odvm run s10 --recovery x.img --export go.sh   # baslatma betigi yaz (.sh / .bat)
+odvm clone s10 s10big --ram 12288 --name "Benim S10"
+odvm config set mode fast      # lang, mode, qemu, adb_port, recovery_dir, update_check
+odvm clean --recovery          # onbellegi (+ indirilen recovery'leri) sil
+odvm completion bash|zsh|powershell
+```
+
 ## Hizli baslangic (en kolayi)
 
 ```

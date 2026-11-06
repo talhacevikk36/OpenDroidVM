@@ -122,7 +122,7 @@ def test_start_downloads_then_runs(server, tmp_path, monkeypatch):
     monkeypatch.setattr(cli.subprocess, "call", lambda cmd: called.setdefault("cmd", cmd) and 0)
     monkeypatch.setattr(cli.qemu, "find_qemu", lambda arch, explicit=None: "/usr/bin/qemu-fake")
     assert cli.main(["start", "s7", "--yes"]) == 0
-    assert "-kernel" in called["cmd"] and (tmp_path / "recovery" / "s7").is_dir()
+    assert "-kernel" in called["cmd"] and (recovery.default_dir() / "s7").is_dir()
     assert cli.main(["start", "s9", "--yes"]) == 1            # no page on the fake server
 
 
@@ -133,7 +133,7 @@ def test_start_unknown_device_suggests(capsys):
 
 def test_wizard_full_flow(monkeypatch, tmp_path, capsys):
     monkeypatch.chdir(tmp_path)
-    answers = iter(["galaxy s10", "1", "3", "1", "y"])     # search, pick, no recovery, fast, confirm
+    answers = iter(["galaxy s10", "1", "y", "3", "1", "y"])   # search, pick, continue anyway (measured: no boot), no recovery, fast, confirm
     monkeypatch.setattr("builtins.input", lambda prompt="": next(answers))
     called = {}
     monkeypatch.setattr(cli.subprocess, "call", lambda cmd: called.setdefault("cmd", cmd) and 0)

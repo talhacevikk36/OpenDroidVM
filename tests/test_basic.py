@@ -29,7 +29,7 @@ def test_overrides_and_net():
     p = profiles.find("pixel")
     c = launcher.build(p, launcher.Options(ram=1024, cores=2, adb_port=6000, vnc=1, snapshot=True))
     assert c[c.index("-m") + 1] == "1024"
-    assert any("hostfwd=tcp::6000-:5555" in x for x in c)
+    assert any("hostfwd=tcp:127.0.0.1:6000-:5555" in x for x in c)
     assert "-snapshot" in c and "vnc=:1" in c
 
 
