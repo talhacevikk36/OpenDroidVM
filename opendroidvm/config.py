@@ -10,6 +10,7 @@ SCHEMA = {                        # key: (type, allowed values or None)
     "adb_port": (int, None),
     "recovery_dir": (str, None),
     "update_check": (bool, None),
+    "channel": (str, ("stable", "alpha")),
 }
 
 

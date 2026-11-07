@@ -294,3 +294,94 @@ def test_measured_table_matches_what_we_ship():
     assert all(profiles.find(i) for i in compat_data.MEASURED)
     assert compat.get("s4")["reason"] == "no_virt" and compat.get("s7")["reason"] == "no_uart"
     assert compat.label("s10") == "twrp:no-boot" and compat.label("pixel2") == "twrp:?"
+
+
+# ---------- display demo (Alpine with a GPU driver)
+def _ppm(path, w=160, h=384, content_rows=6):
+    pix = bytearray(w * h * 3)
+    for r in range(content_rows):
+        for y in range(r * 64, r * 64 + 8):
+            for x in range(16, 120):
+                pix[(y * w + x) * 3:(y * w + x) * 3 + 3] = b"\xdd\xdd\xdd"
+    with open(path, "wb") as f:
+        f.write(f"P6\n{w} {h}\n255\n".encode() + bytes(pix))
+
+
+def test_art_rows_and_picture_detection(tmp_path):
+    f = tmp_path / "a.ppm"
+    _ppm(str(f), content_rows=6)
+    rows = screen.art_rows(str(f))
+    assert sum(1 for r in rows if "#" in r) == 6 and screen.has_picture(rows)
+    _ppm(str(f), content_rows=1)                         # QEMU's 'Display output is not active' = one line
+    assert not screen.has_picture(screen.art_rows(str(f)))
+
+
+def test_display_command_has_gpu_modloop_and_monitor():
+    c = selftest.display_command("/q", "/k", "/i", 8123, vnc=2, monitor_port=5700)
+    j = " ".join(c)
+    assert "virtio-gpu-pci" in j and "modloop=http://10.0.2.2:8123/modloop-virt" in j
+    assert "console=tty0 console=ttyAMA0" in j and "vnc=:2" in j and "tcp:127.0.0.1:5700" in j
+    assert "mon:stdio" in " ".join(selftest.display_command("/q", "/k", "/i", 1, interactive=True))
+    assert c[c.index("-display") + 1] == "vnc=:2"
+    assert selftest.display_command("/q", "/k", "/i", 1)[c.index("-display") + 1] == "none"
+
+
+def test_check_display_sees_a_picture(tmp_path, monkeypatch):
+    import io
+
+    class FakeProc:
+        stdout = io.BytesIO(b"booting\nWelcome to Alpine Linux\nlocalhost login: \n")
+        def kill(self): pass
+        def wait(self): return 0
+    monkeypatch.setattr(selftest.subprocess, "Popen", lambda *a, **k: FakeProc())
+    monkeypatch.setattr(selftest.time, "sleep", lambda s: None)
+    monkeypatch.setattr(selftest.screen, "dump_ppm", lambda path, port: _ppm(path) or path)
+    ok, rows, text = selftest.check_display("/q", ["k", "i", "m"], tmp_path, timeout=10)
+    assert ok and "login:" in text and any("#" in r for r in rows)
+    monkeypatch.setattr(selftest.screen, "dump_ppm", lambda path, port: (_ for _ in ()).throw(RuntimeError("none")))
+    FakeProc.stdout = io.BytesIO(b"login:\n")
+    ok, rows, _ = selftest.check_display("/q", ["k", "i", "m"], tmp_path, timeout=10)
+    assert not ok and rows == []
+
+
+def test_selftest_display_and_linux_commands(monkeypatch, capsys, tmp_path):
+    monkeypatch.setattr(cli.qemu, "find_qemu", lambda a, e=None: "/q")
+    monkeypatch.setattr(cli.selftest, "prepare_display", lambda progress=None: (["k", "i", "m"], tmp_path))
+    rows = ["#####....", "###......", "######...", "####.....", "#########", "##.......", "........."]
+    monkeypatch.setattr(cli.selftest, "check_display", lambda *a, **k: (True, rows, "login:"))
+    assert cli.main(["selftest", "--display"]) == 0
+    out = capsys.readouterr().out
+    assert "PASS" in out and "#####" in out
+    monkeypatch.setattr(cli.selftest, "check_display", lambda *a, **k: (False, [], "kernel panic\n"))
+    assert cli.main(["selftest", "--display"]) == 1
+    ran = []
+    monkeypatch.setattr(cli.subprocess, "call", lambda cmd: ran.append(cmd) or 0)
+    assert cli.main(["linux", "--vnc", "3"]) == 0
+    assert "vnc=:3" in " ".join(ran[0]) and "mon:stdio" in ran[0]
+    assert "localhost:5903" in capsys.readouterr().err
+
+
+def test_login_prompt_without_newline_is_seen(tmp_path, monkeypatch):
+    """Real bug: a getty prompt ('localhost login: ') never ends with a newline."""
+    r, w = os.pipe()
+    os.write(w, b"Welcome to Alpine Linux 3.24\nKernel 6.18 on aarch64 (/dev/ttyAMA0)\n\nlocalhost login: ")
+
+    class FakeProc:
+        stdout = os.fdopen(r, "rb", buffering=0)      # stays open and silent, like a running VM
+        def kill(self): pass
+        def wait(self): return 0
+    monkeypatch.setattr(selftest.subprocess, "Popen", lambda *a, **k: FakeProc())
+    monkeypatch.setattr(selftest.time, "sleep", lambda s: None)
+    monkeypatch.setattr(selftest.screen, "dump_ppm", lambda path, port: _ppm(path) or path)
+    try:
+        ok, rows, text = selftest.check_display("/q", ["k", "i", "m"], tmp_path, timeout=10)
+    finally:
+        os.close(w)
+    assert ok and text.rstrip().endswith("login:")
+
+
+def test_boot_also_reads_partial_lines(monkeypatch):
+    ok, text = selftest.boot([sys.executable, "-u", "-c",
+                              "import time,sys; sys.stdout.write('no newline here: login:'); sys.stdout.flush(); time.sleep(30)"],
+                             "login:", 20)
+    assert ok
