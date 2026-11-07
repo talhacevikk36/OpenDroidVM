@@ -379,10 +379,49 @@ def _shot(a):
     return 0
 
 
+def _linux(a):
+    """Interactive demo: Alpine Linux on the virtual screen (VNC) + serial console."""
+    exe = a.qemu or qemu.find_qemu("aarch64")
+    if not exe and not _qemu_ready("aarch64", None, a.yes):
+        return 1
+    exe = exe or qemu.find_qemu("aarch64")
+    try:
+        files, cache_dir = selftest.prepare_display(progress_bar())
+    except (OSError, urllib.error.URLError) as e:
+        print(t("st_net", e=e), file=sys.stderr)
+        return 1
+    vnc = a.vnc if a.vnc >= 0 else (0 if (qemu.is_termux() or launcher.effective_vnc(
+        launcher.Options())[0] >= 0) else -1)
+    srv, port = selftest.serve_cache(cache_dir)
+    mon = qemu.free_port(5556) or 5556
+    cmd = selftest.display_command(exe, files[0], files[1], port, vnc, mon, interactive=True)
+    print(t("linux_hint", vnc=5900 + max(vnc, 0)), file=sys.stderr)
+    state.write("alpine-demo", mon, 0, vnc)
+    try:
+        return subprocess.call(cmd)
+    finally:
+        state.clear()
+        srv.shutdown()
+
+
 def _selftest(a):
     exe = a.qemu or qemu.find_qemu("aarch64")
     if not exe and not _qemu_ready("aarch64", None, a.yes):
         return 1
+    if a.display:
+        exe = exe or qemu.find_qemu("aarch64")
+        print(t("st_display_start"))
+        try:
+            files, cache_dir = selftest.prepare_display(progress_bar())
+        except (OSError, urllib.error.URLError) as e:
+            print(t("st_net", e=e), file=sys.stderr)
+            return 1
+        ok, rows, text = selftest.check_display(exe, files, cache_dir, a.timeout)
+        print("\n".join(r for r in rows if "#" in r)[:2400])
+        if not rows:
+            print("\n".join([x for x in text.splitlines() if x.strip()][-4:]))
+        print(t("st_display_pass") if ok else t("st_display_fail"))
+        return 0 if ok else 1
     print(t("st_start"))
     try:
         ok, text = selftest.run(a.qemu or None, a.kernel, a.initrd, a.expect, a.timeout, progress_bar())
@@ -676,8 +715,14 @@ def main(argv=None):
     s.add_argument("--kernel"); s.add_argument("--initrd"); s.add_argument("--qemu")
     s.add_argument("--expect", default="Linux version", help="regex that must appear on the serial console")
     s.add_argument("--timeout", type=int, default=150)
+    s.add_argument("--display", action="store_true",
+                   help="boot a Linux with a GPU driver and check that a real picture appears on the screen")
     s.add_argument("--yes", "-y", action="store_true", help=t("h_yes"))
     s.set_defaults(f=_selftest)
+    s = sp.add_parser("linux", help=t("h_linux"))
+    s.add_argument("--vnc", type=int, default=-1, help=t("h_vnc"))
+    s.add_argument("--qemu"); s.add_argument("--yes", "-y", action="store_true", help=t("h_yes"))
+    s.set_defaults(f=_linux)
     s = sp.add_parser("avd", help=t("h_avd"))
     s.add_argument("action", choices=["doctor", "create", "run"])
     s.add_argument("device", nargs="?")

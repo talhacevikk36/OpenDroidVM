@@ -25,4 +25,7 @@ jobs:
           K=$(find ~/.cache -name vmlinuz-virt | head -1)
           odvm check "$K" 2>&1 | tee check.txt
           echo "::notice::control scan :: $(tr '\n' '|' < check.txt)"
+          echo "--- display test: Alpine with a GPU driver, picture on the virtual screen"
+          odvm selftest --display --yes --timeout 600 2>&1 | tee display.txt
+          echo "::notice::display test :: $(tr '\n' '/' < display.txt | cut -c1-3300)"
           exit 0
