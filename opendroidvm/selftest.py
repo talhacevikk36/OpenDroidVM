@@ -46,6 +46,20 @@ def fetch(name, progress=None):
     return dest
 
 
+def _pump(stream, q):
+    """Forward raw output chunks. NOT line by line: a login prompt has no newline."""
+    read = getattr(stream, "read1", None) or (lambda n: stream.read(1))
+    while True:
+        try:
+            chunk = read(4096)
+        except (OSError, ValueError):
+            break
+        if not chunk:
+            break
+        q.put(chunk.decode(errors="replace"))
+    q.put(None)
+
+
 def command(exe, kernel, initrd):
     hw = qemu.host_accel("aarch64")
     accel, cpu = (hw, "host") if hw else ("tcg,thread=multi", "max")
@@ -62,21 +76,19 @@ def boot(cmd, expect, timeout):
     q = queue.Queue()
 
     def reader():
-        for line in iter(p.stdout.readline, b""):
-            q.put(line.decode(errors="replace"))
-        q.put(None)
+        _pump(p.stdout, q)
     threading.Thread(target=reader, daemon=True).start()
     text, found, end = "", False, time.time() + timeout
     rx = re.compile(expect)
     try:
         while time.time() < end:
             try:
-                line = q.get(timeout=1)
+                chunk = q.get(timeout=1)
             except queue.Empty:
                 continue
-            if line is None:
+            if chunk is None:
                 break
-            text += line
+            text += chunk
             if rx.search(text):
                 found = True
                 break
@@ -144,20 +156,18 @@ def check_display(exe, files, cache_dir, timeout=360, vnc=-1):
     q = queue.Queue()
 
     def reader():
-        for line in iter(p.stdout.readline, b""):
-            q.put(line.decode(errors="replace"))
-        q.put(None)
+        _pump(p.stdout, q)
     threading.Thread(target=reader, daemon=True).start()
     text, rows, end = "", [], time.time() + timeout
     try:
         while time.time() < end:
             try:
-                line = q.get(timeout=1)
+                chunk = q.get(timeout=1)
             except queue.Empty:
                 continue
-            if line is None:
+            if chunk is None:
                 break
-            text += line
+            text += chunk
             if re.search(r"login:", text):
                 time.sleep(5)                                  # let the console redraw
                 ppm = os.path.join(tempfile.gettempdir(), f"odvm-demo-{os.getpid()}.ppm")

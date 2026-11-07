@@ -359,3 +359,29 @@ def test_selftest_display_and_linux_commands(monkeypatch, capsys, tmp_path):
     assert cli.main(["linux", "--vnc", "3"]) == 0
     assert "vnc=:3" in " ".join(ran[0]) and "mon:stdio" in ran[0]
     assert "localhost:5903" in capsys.readouterr().err
+
+
+def test_login_prompt_without_newline_is_seen(tmp_path, monkeypatch):
+    """Real bug: a getty prompt ('localhost login: ') never ends with a newline."""
+    r, w = os.pipe()
+    os.write(w, b"Welcome to Alpine Linux 3.24\nKernel 6.18 on aarch64 (/dev/ttyAMA0)\n\nlocalhost login: ")
+
+    class FakeProc:
+        stdout = os.fdopen(r, "rb", buffering=0)      # stays open and silent, like a running VM
+        def kill(self): pass
+        def wait(self): return 0
+    monkeypatch.setattr(selftest.subprocess, "Popen", lambda *a, **k: FakeProc())
+    monkeypatch.setattr(selftest.time, "sleep", lambda s: None)
+    monkeypatch.setattr(selftest.screen, "dump_ppm", lambda path, port: _ppm(path) or path)
+    try:
+        ok, rows, text = selftest.check_display("/q", ["k", "i", "m"], tmp_path, timeout=10)
+    finally:
+        os.close(w)
+    assert ok and text.rstrip().endswith("login:")
+
+
+def test_boot_also_reads_partial_lines(monkeypatch):
+    ok, text = selftest.boot([sys.executable, "-u", "-c",
+                              "import time,sys; sys.stdout.write('no newline here: login:'); sys.stdout.flush(); time.sleep(30)"],
+                             "login:", 20)
+    assert ok
