@@ -15,7 +15,7 @@ recovery or Android for a phone profile, on **Windows/Linux and on Android (Term
 ## Steps
 1. [x] Measure instead of guess (`odvm check`, compatibility table from real images)
 2. [x] Prove the toolchain on a known-good guest (`odvm selftest`)
-3. [ ] Show a real picture on VNC with a GPU driver (display probe in CI, `odvm selftest --display`)
+3. [x] Show a real picture on VNC with a GPU driver: `odvm linux` / `odvm selftest --display` (CI looks at the virtual screen: a real console with 21 text rows appears). **So the display chain works; a black screen means the guest kernel has no GPU driver.**
 4. [ ] One phone profile that boots **something interactive**: candidates (each needs an image built for `virt`/virtio):
    - AOSP *Cuttlefish* / GSI with a virtio kernel (ARM64)
    - Android-x86 / generic x86_64 Android on PCs (QEMU + KVM/WHPX)

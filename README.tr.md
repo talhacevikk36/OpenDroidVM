@@ -21,7 +21,8 @@ Android cihaz profilleriyle QEMU uzerinde recovery (TWRP, OrangeFox vb.) ve ROM 
 Neden: QEMU'nun `virt` kartinda Snapdragon/Exynos donanimi yok ve telefon kernel'i sadece kendi telefonunun suruculerini icerir. Bu odvm'de bir hata degil, hicbir ayar duzeltmez. Herhangi bir imaj icin `odvm check <cihaz veya imaj>` kullan; `odvm list` olculen cihazlarda `<twrp:no-boot>` gosterir.
 
 Gercekten acilanlar:
-- `odvm selftest` Alpine Linux (ARM64) acar ve QEMU'nun, seri konsolun, cihazinin calistigini kanitlar (GitHub sunucularinda dogrulandi).
+- **`odvm linux`** Alpine Linux (ARM64) acar ve **ekrani calisir**: bir VNC istemcisini `localhost:5900`'e bagla, klavyeli gercek bir konsol gelir (giris `root`, sifresiz). `odvm selftest --display` sanal ekrana bakarak bunu otomatik kontrol eder. **GitHub sunucularinda dogrulandi: gercek bir yazi konsolu beliriyor.** Donanim hizlandirma yoksa yavas (telefonda birkac dakika).
+- `odvm selftest` ayni kernel'i ekransiz acar ve QEMU ile seri konsolun calistigini kanitlar.
 - `virt` icin derlenmis kernel'ler (dagitim kernel'leri, AOSP *Cuttlefish*/GKI) `--boot`/`--recovery` ile.
 - **Android Emulator:** `odvm avd create s10` o profilin ekran, yogunluk, RAM ve cekirdegiyle bir AVD olusturur, `odvm avd run s10` gercek bir Android baslatir (Android SDK gerekir; deneysel, telefonda/Termux'ta yok).
 

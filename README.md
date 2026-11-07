@@ -23,7 +23,8 @@ How it works under the hood: [docs/how-it-works.md](docs/how-it-works.md)
 Why: QEMU's `virt` board has no Snapdragon/Exynos hardware, and a phone kernel only contains drivers for its own phone. This is not a bug in odvm and no setting fixes it. Use `odvm check <device or image>` to see it for any image, and `odvm list` shows `<twrp:no-boot>` for the measured devices.
 
 What really boots:
-- `odvm selftest` boots Alpine Linux (ARM64) and proves QEMU, the serial console and your machine work (verified on GitHub's runners and in Termux-like conditions).
+- **`odvm linux`** starts Alpine Linux (ARM64) with a **working screen**: connect a VNC viewer (`localhost:5900`) and you get a real console, keyboard included (login `root`, no password). `odvm selftest --display` checks this automatically by looking at the virtual screen. **Verified on GitHub's runners: a real text console appears.** Slow without hardware acceleration (phones: a few minutes).
+- `odvm selftest` boots the same kernel headless and proves QEMU and the serial console work.
 - Kernels built for `virt` (distro kernels, AOSP *Cuttlefish*/GKI builds) via `--boot`/`--recovery`.
 - **Android Emulator:** `odvm avd create s10` builds an AVD with that profile's screen, density, RAM and cores, `odvm avd run s10` starts a real Android (needs the Android SDK; experimental, not available on phones/Termux).
 
